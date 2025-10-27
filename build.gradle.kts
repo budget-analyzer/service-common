@@ -31,7 +31,7 @@ spotless {
         googleJavaFormat("1.17.0")
         trimTrailingWhitespace()
         endWithNewline()
-        importOrder()
+        importOrder("java", "javax", "jakarta", "org", "com", "", "com.bleurubin")
         removeUnusedImports()
     }
 }

@@ -1,9 +1,10 @@
 package com.bleurubin.service.api;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /*
  * RFC-7807 error response.  https://datatracker.ietf.org/doc/html/rfc7807
