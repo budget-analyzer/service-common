@@ -16,7 +16,7 @@ public class ApiErrorResponse {
   @Schema(
       description = "Human-readable message describing the error",
       requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "CSV format: unknown-bank not supported")
+      example = "CSV format: fake-bank not supported")
   private String message;
 
   @Schema(

@@ -1,6 +1,7 @@
 package com.bleurubin.service.config;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 
@@ -14,11 +15,22 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import com.bleurubin.service.api.ApiErrorResponse;
 import com.bleurubin.service.api.ApiErrorType;
 
-/*
- * This class is abstract to prevent direct instantiation because we
- * need the service-specific @OpenApiDefinition annotation.
+/**
+ * This class is abstract to prevent direct instantiation because we need the
+ * service-specific @Configuration and @OpenApiDefinition annotations to pass service information to
+ * SpringDoc.
  */
 public abstract class BaseOpenApiConfig {
+
+  @Bean
+  public SpringDocConfigProperties springDocConfigProperties() {
+    SpringDocConfigProperties props = new SpringDocConfigProperties();
+    // this prevents SpringDoc from scanning RestControllerAdvice and
+    // adding every possible response to every endpoint
+    props.setOverrideWithGenericResponse(false);
+
+    return props;
+  }
 
   @Bean
   public OpenApiCustomizer globalResponseCustomizer() {
