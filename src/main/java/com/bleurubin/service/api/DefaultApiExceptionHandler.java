@@ -45,7 +45,7 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.BUSINESS_ERROR, exception.getCode(), exception);
+    return handleApiException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
   }
 
   @ExceptionHandler

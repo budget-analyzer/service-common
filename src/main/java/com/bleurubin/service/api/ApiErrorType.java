@@ -14,7 +14,7 @@ public enum ApiErrorType {
   NOT_FOUND,
 
   @Schema(description = "Business rule violation - check code field")
-  BUSINESS_ERROR,
+  APPLICATION_ERROR,
 
   @Schema(description = "Downstream service unavailable")
   SERVICE_UNAVAILABLE,
