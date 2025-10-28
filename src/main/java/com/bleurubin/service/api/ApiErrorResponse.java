@@ -10,7 +10,7 @@ public class ApiErrorResponse {
   @Schema(
       description = "Error type indicating the category and structure of the error",
       requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "BUSINESS_ERROR")
+      example = "APPLICATION_ERROR")
   private ApiErrorType type;
 
   @Schema(
@@ -21,14 +21,12 @@ public class ApiErrorResponse {
 
   @Schema(
       description =
-          "Machine-readable error code for specific business errors (required for BUSINESS_ERROR type)",
-      requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+          "Machine-readable error code for specific application errors (required for APPLICATION_ERROR type)",
       example = "CSV_FORMAT_NOT_SUPPORTED")
   private String code;
 
   @Schema(
-      description = "List of field-level validation errors (populated for VALIDATION_ERROR type)",
-      requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+      description = "List of field-level validation errors (populated for VALIDATION_ERROR type)")
   private List<FieldError> errors;
 
   // Private constructor for builder
