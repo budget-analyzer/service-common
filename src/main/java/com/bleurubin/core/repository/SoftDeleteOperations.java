@@ -13,7 +13,7 @@ import com.bleurubin.core.domain.SoftDeletable;
 public interface SoftDeleteOperations<T extends SoftDeletable> extends JpaSpecificationExecutor<T> {
 
   default Specification<T> notDeleted() {
-    return (root, query, cb) -> cb.isFalse(root.get("deleted"));
+    return (root, query, cb) -> cb.isFalse(root.get("softDelete").get("deleted"));
   }
 
   default List<T> findAllActive() {
