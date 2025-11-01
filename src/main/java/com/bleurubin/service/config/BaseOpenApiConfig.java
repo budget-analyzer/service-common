@@ -5,6 +5,8 @@ import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 
+import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Content;
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 
 import com.bleurubin.service.api.ApiErrorResponse;
 import com.bleurubin.service.api.ApiErrorType;
+import com.bleurubin.service.api.FieldError;
 
 /**
  * This class is abstract to prevent direct instantiation because we need the
@@ -42,6 +45,23 @@ public abstract class BaseOpenApiConfig {
             .forEach(
                 pathItem -> pathItem.readOperationsMap().forEach(this::addStandardErrorResponses));
       }
+    };
+  }
+
+  // Required for services that never reference ApiErrorResponse directly. Ensures Springdoc
+  // includes the ApiErrorResponse schema for rendering standard error responses.
+  @Bean
+  public OpenApiCustomizer addApiErrorResponseSchemas() {
+    return openApi -> {
+      if (openApi.getComponents() == null) {
+        openApi.setComponents(new Components());
+      }
+
+      var components = openApi.getComponents();
+      var converters = ModelConverters.getInstance();
+
+      converters.read(ApiErrorResponse.class).forEach(components::addSchemas);
+      converters.read(FieldError.class).forEach(components::addSchemas);
     };
   }
 
