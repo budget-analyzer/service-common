@@ -435,12 +435,14 @@ bleurubin:
         - /v3/api-docs/**
       include-patterns:                # Explicitly include (overrides exclude)
         - /api/**
-      sensitive-headers:               # Headers to mask (case-insensitive)
+      sensitive-headers:               # Headers to mask (case-insensitive, defaults shown)
         - Authorization
         - Cookie
         - Set-Cookie
         - X-API-Key
         - X-Auth-Token
+        - Proxy-Authorization
+        - WWW-Authenticate
 ```
 
 **Logged Information:**
