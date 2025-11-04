@@ -126,25 +126,45 @@ public class ApiErrorResponse {
   public static class Builder {
     private final ApiErrorResponse response = new ApiErrorResponse();
 
-    /** Sets the error type. */
+    /**
+     * Sets the error type.
+     *
+     * @param type the error type to set
+     * @return this builder instance
+     */
     public Builder type(ApiErrorType type) {
       response.type = type;
       return this;
     }
 
-    /** Sets the error message. */
+    /**
+     * Sets the error message.
+     *
+     * @param message the error message to set
+     * @return this builder instance
+     */
     public Builder message(String message) {
       response.message = message;
       return this;
     }
 
-    /** Sets the error code. */
+    /**
+     * Sets the error code.
+     *
+     * @param code the error code to set
+     * @return this builder instance
+     */
     public Builder code(String code) {
       response.code = code;
       return this;
     }
 
-    /** Sets the field errors. */
+    /**
+     * Sets the field errors.
+     *
+     * @param fieldErrors the list of field errors to set
+     * @return this builder instance
+     */
     public Builder fieldErrors(List<FieldError> fieldErrors) {
       response.fieldErrors = fieldErrors;
       return this;
