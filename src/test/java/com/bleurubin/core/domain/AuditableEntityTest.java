@@ -71,7 +71,7 @@ class AuditableEntityTest {
             && !entity.getUpdatedAt().isAfter(afterPersist),
         "updatedAt should be within persist time range");
     // createdAt and updatedAt should be very close (within 1 millisecond)
-    long timeDiffMillis =
+    var timeDiffMillis =
         java.time.Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
@@ -161,7 +161,7 @@ class AuditableEntityTest {
     var reloadedEntity = entityManager.find(TestAuditableEntity.class, entity.getId());
 
     // Assert - Allow for sub-millisecond database precision differences
-    long timeDiffMillis =
+    var timeDiffMillis =
         java.time.Duration.between(originalCreatedAt, reloadedEntity.getCreatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
@@ -225,7 +225,7 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - createdAt and updatedAt should be very close (PreUpdate not called separately)
-    long timeDiffMillis =
+    var timeDiffMillis =
         java.time.Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
