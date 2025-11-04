@@ -41,11 +41,11 @@ class HttpLoggingFilterTest {
     properties.setEnabled(false);
     filter = new HttpLoggingFilter(properties);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(request, response, filterChain);
@@ -57,12 +57,12 @@ class HttpLoggingFilterTest {
   @Test
   void shouldLogRequestAndResponse() throws Exception {
     // Arrange
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("POST");
     request.setRequestURI("/api/users");
     request.setContent("{\"name\":\"John\"}".getBytes());
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(request, response, filterChain);
@@ -77,11 +77,11 @@ class HttpLoggingFilterTest {
     properties.setExcludePatterns(List.of("/actuator/**", "/swagger-ui/**"));
     filter = new HttpLoggingFilter(properties);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/actuator/health");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(request, response, filterChain);
@@ -96,15 +96,15 @@ class HttpLoggingFilterTest {
     properties.setIncludePatterns(List.of("/api/**"));
     filter = new HttpLoggingFilter(properties);
 
-    MockHttpServletRequest includedRequest = new MockHttpServletRequest();
+    var includedRequest = new MockHttpServletRequest();
     includedRequest.setMethod("GET");
     includedRequest.setRequestURI("/api/users");
 
-    MockHttpServletRequest excludedRequest = new MockHttpServletRequest();
+    var excludedRequest = new MockHttpServletRequest();
     excludedRequest.setMethod("GET");
     excludedRequest.setRequestURI("/public/health");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act - Test included path
     filter.doFilterInternal(includedRequest, response, filterChain);
@@ -113,7 +113,7 @@ class HttpLoggingFilterTest {
     reset(filterChain);
 
     // Act - Test excluded path
-    MockHttpServletResponse excludedResponse = new MockHttpServletResponse();
+    var excludedResponse = new MockHttpServletResponse();
     filter.doFilterInternal(excludedRequest, excludedResponse, filterChain);
     verify(filterChain).doFilter(eq(excludedRequest), eq(excludedResponse)); // Should skip logging
   }
@@ -124,11 +124,11 @@ class HttpLoggingFilterTest {
     properties.setLogErrorsOnly(true);
     filter = new HttpLoggingFilter(properties);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
     response.setStatus(200); // Success status
 
     // Act
@@ -142,12 +142,12 @@ class HttpLoggingFilterTest {
   @Test
   void shouldWrapRequestAndResponseForContentCaching() throws Exception {
     // Arrange
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("POST");
     request.setRequestURI("/api/users");
     request.setContent("{\"name\":\"John\"}".getBytes());
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(
@@ -167,11 +167,11 @@ class HttpLoggingFilterTest {
   @Test
   void shouldNotLogRequestBodyForGetRequests() throws Exception {
     // Arrange
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(request, response, filterChain);
@@ -183,11 +183,11 @@ class HttpLoggingFilterTest {
   @Test
   void shouldHandleExceptionsDuringLogging() throws Exception {
     // Arrange
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act - Should not throw even if internal logging fails
     assertDoesNotThrow(() -> filter.doFilterInternal(request, response, filterChain));
@@ -199,13 +199,13 @@ class HttpLoggingFilterTest {
   @Test
   void shouldCopyResponseBodyToActualResponse() throws Exception {
     // Arrange
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
-    String responseBody = "{\"users\":[]}";
+    var responseBody = "{\"users\":[]}";
 
     // Act
     filter.doFilterInternal(
@@ -217,7 +217,7 @@ class HttpLoggingFilterTest {
         });
 
     // Assert - Response should contain the body
-    String actualResponseBody = response.getContentAsString();
+    var actualResponseBody = response.getContentAsString();
     assertEquals(responseBody, actualResponseBody);
   }
 
@@ -228,11 +228,11 @@ class HttpLoggingFilterTest {
     properties.setExcludePatterns(List.of("/api/internal/**"));
     filter = new HttpLoggingFilter(properties);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
+    var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/internal/debug");
 
-    MockHttpServletResponse response = new MockHttpServletResponse();
+    var response = new MockHttpServletResponse();
 
     // Act
     filter.doFilterInternal(request, response, filterChain);

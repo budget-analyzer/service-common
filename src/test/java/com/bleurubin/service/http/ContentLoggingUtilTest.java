@@ -79,7 +79,7 @@ class ContentLoggingUtilTest {
 
     // Assert
     @SuppressWarnings("unchecked")
-    Map<String, String> headers = (Map<String, String>) details.get("headers");
+    var headers = (Map<String, String>) details.get("headers");
     assertEquals("********", headers.get("Authorization"));
     assertEquals("application/json", headers.get("Content-Type"));
     assertEquals("********", headers.get("X-API-Key"));
@@ -95,7 +95,7 @@ class ContentLoggingUtilTest {
     lenient().when(request.getRemoteAddr()).thenReturn("192.168.1.1");
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert - Should use first IP from X-Forwarded-For
     assertEquals("203.0.113.1", details.get("clientIp"));
@@ -108,7 +108,7 @@ class ContentLoggingUtilTest {
     when(response.getHeaderNames()).thenReturn(Collections.emptyList());
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractResponseDetails(response, properties);
+    var details = ContentLoggingUtil.extractResponseDetails(response, properties);
 
     // Assert
     assertEquals(200, details.get("status"));
@@ -123,11 +123,11 @@ class ContentLoggingUtilTest {
     when(response.getHeader("Content-Type")).thenReturn("application/json");
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractResponseDetails(response, properties);
+    var details = ContentLoggingUtil.extractResponseDetails(response, properties);
 
     // Assert
     @SuppressWarnings("unchecked")
-    Map<String, String> headers = (Map<String, String>) details.get("headers");
+    var headers = (Map<String, String>) details.get("headers");
     assertEquals("********", headers.get("Set-Cookie"));
     assertEquals("application/json", headers.get("Content-Type"));
   }
@@ -135,14 +135,14 @@ class ContentLoggingUtilTest {
   @Test
   void shouldExtractRequestBodyWithinSizeLimit() {
     // Arrange
-    String requestBody = "{\"username\":\"john\",\"password\":\"secret\"}";
-    byte[] contentBytes = requestBody.getBytes();
+    var requestBody = "{\"username\":\"john\",\"password\":\"secret\"}";
+    var contentBytes = requestBody.getBytes();
 
     when(requestWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(requestWrapper.getCharacterEncoding()).thenReturn("UTF-8");
 
     // Act
-    String extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
+    var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
     assertEquals(requestBody, extractedBody);
@@ -151,14 +151,14 @@ class ContentLoggingUtilTest {
   @Test
   void shouldTruncateRequestBodyExceedingSizeLimit() {
     // Arrange
-    String requestBody = "A".repeat(100);
-    byte[] contentBytes = requestBody.getBytes();
+    var requestBody = "A".repeat(100);
+    var contentBytes = requestBody.getBytes();
 
     when(requestWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(requestWrapper.getCharacterEncoding()).thenReturn("UTF-8");
 
     // Act - Limit to 50 bytes
-    String extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 50);
+    var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 50);
 
     // Assert
     assertTrue(extractedBody.startsWith("A".repeat(50)));
@@ -172,7 +172,7 @@ class ContentLoggingUtilTest {
     when(requestWrapper.getContentAsByteArray()).thenReturn(new byte[0]);
 
     // Act
-    String extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
+    var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
     assertNull(extractedBody);
@@ -181,14 +181,14 @@ class ContentLoggingUtilTest {
   @Test
   void shouldExtractResponseBodyWithinSizeLimit() {
     // Arrange
-    String responseBody = "{\"status\":\"success\",\"data\":{}}";
-    byte[] contentBytes = responseBody.getBytes();
+    var responseBody = "{\"status\":\"success\",\"data\":{}}";
+    var contentBytes = responseBody.getBytes();
 
     when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
 
     // Act
-    String extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
     assertEquals(responseBody, extractedBody);
@@ -197,14 +197,14 @@ class ContentLoggingUtilTest {
   @Test
   void shouldTruncateResponseBodyExceedingSizeLimit() {
     // Arrange
-    String responseBody = "B".repeat(200);
-    byte[] contentBytes = responseBody.getBytes();
+    var responseBody = "B".repeat(200);
+    var contentBytes = responseBody.getBytes();
 
     when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
 
     // Act - Limit to 100 bytes
-    String extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 100);
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 100);
 
     // Assert
     assertTrue(extractedBody.startsWith("B".repeat(100)));
@@ -216,10 +216,10 @@ class ContentLoggingUtilTest {
   void shouldFormatLogMessageWithDetails() {
     // Arrange
     Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
-    String body = "{\"name\":\"John Doe\"}";
+    var body = "{\"name\":\"John Doe\"}";
 
     // Act
-    String logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, body);
+    var logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, body);
 
     // Assert
     assertTrue(logMessage.contains("HTTP Request"));
@@ -236,7 +236,7 @@ class ContentLoggingUtilTest {
     Map<String, Object> details = Map.of("method", "GET", "uri", "/api/users");
 
     // Act
-    String logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, null);
+    var logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, null);
 
     // Assert
     assertTrue(logMessage.contains("HTTP Request"));
@@ -254,7 +254,7 @@ class ContentLoggingUtilTest {
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert
     assertFalse(details.containsKey("queryString"));
@@ -268,7 +268,7 @@ class ContentLoggingUtilTest {
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert
     assertFalse(details.containsKey("clientIp"));
@@ -282,7 +282,7 @@ class ContentLoggingUtilTest {
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert
     assertFalse(details.containsKey("headers"));

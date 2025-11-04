@@ -53,7 +53,7 @@ class CorrelationIdFilterTest {
   @Test
   void shouldUseExistingCorrelationIdFromRequest() throws Exception {
     // Arrange
-    String existingCorrelationId = "req_abc123def456";
+    var existingCorrelationId = "req_abc123def456";
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
         .thenReturn(existingCorrelationId);
 
@@ -117,7 +117,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
     // Act - Call filter multiple times
-    String[] correlationIds = new String[10];
+    var correlationIds = new String[10];
     for (int i = 0; i < 10; i++) {
       final int index = i;
       filter.doFilterInternal(

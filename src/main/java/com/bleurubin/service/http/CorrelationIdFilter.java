@@ -38,8 +38,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-
-    String correlationId = extractOrGenerateCorrelationId(request);
+    var correlationId = extractOrGenerateCorrelationId(request);
 
     // Store in MDC for logging
     MDC.put(CORRELATION_ID_MDC_KEY, correlationId);
@@ -62,7 +61,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
    * @return Correlation ID
    */
   private String extractOrGenerateCorrelationId(HttpServletRequest request) {
-    String correlationId = request.getHeader(CORRELATION_ID_HEADER);
+    var correlationId = request.getHeader(CORRELATION_ID_HEADER);
 
     if (correlationId == null || correlationId.trim().isEmpty()) {
       correlationId = generateCorrelationId();
@@ -79,7 +78,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
    * @return Generated correlation ID
    */
   private String generateCorrelationId() {
-    String uuid = UUID.randomUUID().toString().replace("-", "");
+    var uuid = UUID.randomUUID().toString().replace("-", "");
     return CORRELATION_ID_PREFIX + uuid.substring(0, 16);
   }
 }

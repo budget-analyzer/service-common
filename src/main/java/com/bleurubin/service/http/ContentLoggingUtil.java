@@ -2,7 +2,6 @@ package com.bleurubin.service.http;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +28,7 @@ public class ContentLoggingUtil {
    */
   public static Map<String, Object> extractRequestDetails(
       HttpServletRequest request, HttpLoggingProperties properties) {
-
-    Map<String, Object> details = new LinkedHashMap<>();
+    var details = new LinkedHashMap<String, Object>();
 
     details.put("method", request.getMethod());
     details.put("uri", request.getRequestURI());
@@ -59,8 +57,7 @@ public class ContentLoggingUtil {
    */
   public static Map<String, Object> extractResponseDetails(
       HttpServletResponse response, HttpLoggingProperties properties) {
-
-    Map<String, Object> details = new LinkedHashMap<>();
+    var details = new LinkedHashMap<String, Object>();
 
     details.put("status", response.getStatus());
 
@@ -80,7 +77,7 @@ public class ContentLoggingUtil {
    */
   public static String extractRequestBody(
       ContentCachingRequestWrapper requestWrapper, int maxSize) {
-    byte[] content = requestWrapper.getContentAsByteArray();
+    var content = requestWrapper.getContentAsByteArray();
 
     if (content.length == 0) {
       return null;
@@ -98,7 +95,7 @@ public class ContentLoggingUtil {
    */
   public static String extractResponseBody(
       ContentCachingResponseWrapper responseWrapper, int maxSize) {
-    byte[] content = responseWrapper.getContentAsByteArray();
+    var content = responseWrapper.getContentAsByteArray();
 
     if (content.length == 0) {
       return null;
@@ -116,11 +113,11 @@ public class ContentLoggingUtil {
    * @return Body as string
    */
   private static String extractBody(byte[] content, String encoding, int maxSize) {
-    int length = Math.min(content.length, maxSize);
-    boolean truncated = content.length > maxSize;
+    var length = Math.min(content.length, maxSize);
+    var truncated = content.length > maxSize;
 
     try {
-      String body =
+      var body =
           new String(
               content, 0, length, encoding != null ? encoding : StandardCharsets.UTF_8.name());
 
@@ -143,17 +140,16 @@ public class ContentLoggingUtil {
    */
   private static Map<String, String> extractHeaders(
       HttpServletRequest request, List<String> sensitiveHeaders) {
-
-    Map<String, String> headers = new LinkedHashMap<>();
-    Enumeration<String> headerNames = request.getHeaderNames();
+    var headers = new LinkedHashMap<String, String>();
+    var headerNames = request.getHeaderNames();
 
     if (headerNames == null) {
       return headers;
     }
 
     while (headerNames.hasMoreElements()) {
-      String headerName = headerNames.nextElement();
-      String headerValue = request.getHeader(headerName);
+      var headerName = headerNames.nextElement();
+      var headerValue = request.getHeader(headerName);
 
       if (isSensitiveHeader(headerName, sensitiveHeaders)) {
         headers.put(headerName, MASKED_VALUE);
@@ -174,11 +170,10 @@ public class ContentLoggingUtil {
    */
   private static Map<String, String> extractResponseHeaders(
       HttpServletResponse response, List<String> sensitiveHeaders) {
-
-    Map<String, String> headers = new LinkedHashMap<>();
+    var headers = new LinkedHashMap<String, String>();
 
     for (String headerName : response.getHeaderNames()) {
-      String headerValue = response.getHeader(headerName);
+      var headerValue = response.getHeader(headerName);
 
       if (isSensitiveHeader(headerName, sensitiveHeaders)) {
         headers.put(headerName, MASKED_VALUE);
@@ -223,7 +218,7 @@ public class ContentLoggingUtil {
     };
 
     for (String header : headerNames) {
-      String ip = request.getHeader(header);
+      var ip = request.getHeader(header);
       if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
         // X-Forwarded-For can contain multiple IPs, take the first one
         if (ip.contains(",")) {
@@ -245,7 +240,7 @@ public class ContentLoggingUtil {
    * @return Formatted log message
    */
   public static String formatLogMessage(String prefix, Map<String, Object> details, String body) {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append(prefix).append(" - ");
 
     // Add key details inline
@@ -278,7 +273,7 @@ public class ContentLoggingUtil {
    * @return True if likely JSON
    */
   private static boolean isJsonContent(String content) {
-    String trimmed = content.trim();
+    var trimmed = content.trim();
     return (trimmed.startsWith("{") && trimmed.endsWith("}"))
         || (trimmed.startsWith("[") && trimmed.endsWith("]"));
   }

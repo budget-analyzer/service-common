@@ -1,7 +1,6 @@
 package com.bleurubin.service.http;
 
 import java.io.IOException;
-import java.util.Map;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -51,7 +50,6 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-
     // Skip if logging is disabled
     if (!properties.isEnabled()) {
       filterChain.doFilter(request, response);
@@ -65,10 +63,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     }
 
     // Wrap request and response to enable content caching
-    ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
-    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+    var requestWrapper = new ContentCachingRequestWrapper(request);
+    var responseWrapper = new ContentCachingResponseWrapper(response);
 
-    long startTime = System.currentTimeMillis();
+    var startTime = System.currentTimeMillis();
 
     try {
       // Log request before processing
@@ -78,7 +76,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
       filterChain.doFilter(requestWrapper, responseWrapper);
 
     } finally {
-      long duration = System.currentTimeMillis() - startTime;
+      var duration = System.currentTimeMillis() - startTime;
 
       // Log response after processing
       logResponse(responseWrapper, duration);
@@ -96,15 +94,14 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    */
   private void logRequest(ContentCachingRequestWrapper request) {
     try {
-      Map<String, Object> requestDetails =
-          ContentLoggingUtil.extractRequestDetails(request, properties);
+      var requestDetails = ContentLoggingUtil.extractRequestDetails(request, properties);
 
       String requestBody = null;
       if (properties.isIncludeRequestBody() && hasBody(request)) {
         requestBody = ContentLoggingUtil.extractRequestBody(request, properties.getMaxBodySize());
       }
 
-      String logMessage =
+      var logMessage =
           ContentLoggingUtil.formatLogMessage("HTTP Request", requestDetails, requestBody);
 
       logAtConfiguredLevel(logMessage);
@@ -127,8 +124,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
         return;
       }
 
-      Map<String, Object> responseDetails =
-          ContentLoggingUtil.extractResponseDetails(response, properties);
+      var responseDetails = ContentLoggingUtil.extractResponseDetails(response, properties);
 
       responseDetails.put("durationMs", duration);
 
@@ -138,7 +134,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
             ContentLoggingUtil.extractResponseBody(response, properties.getMaxBodySize());
       }
 
-      String logMessage =
+      var logMessage =
           ContentLoggingUtil.formatLogMessage("HTTP Response", responseDetails, responseBody);
 
       // Log errors at higher level
@@ -161,7 +157,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @param message The message to log
    */
   private void logAtConfiguredLevel(String message) {
-    String level = properties.getLogLevel().toUpperCase();
+    var level = properties.getLogLevel().toUpperCase();
 
     switch (level) {
       case "TRACE":
@@ -191,7 +187,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @return True if request likely has a body
    */
   private boolean hasBody(HttpServletRequest request) {
-    String method = request.getMethod();
+    var method = request.getMethod();
     return "POST".equalsIgnoreCase(method)
         || "PUT".equalsIgnoreCase(method)
         || "PATCH".equalsIgnoreCase(method);
@@ -204,11 +200,11 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @return True if logging should be skipped
    */
   private boolean shouldSkipLogging(HttpServletRequest request) {
-    String path = request.getRequestURI();
+    var path = request.getRequestURI();
 
     // Check explicit include patterns first
     if (!properties.getIncludePatterns().isEmpty()) {
-      boolean included =
+      var included =
           properties.getIncludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
@@ -219,7 +215,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
 
     // Check exclude patterns
     if (!properties.getExcludePatterns().isEmpty()) {
-      boolean excluded =
+      var excluded =
           properties.getExcludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
