@@ -26,7 +26,7 @@ import java.util.Map;
  * String description = row.values().get("Description");
  * </pre>
  *
- * @param lineNumber the row number in the original CSV file
+ * @param lineNumber the line number in the original CSV file
  * @param values a map of column headers to cell values for this row
  */
 public record CsvRow(int lineNumber, Map<String, String> values) {}
