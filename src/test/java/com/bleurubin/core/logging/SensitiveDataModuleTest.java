@@ -605,10 +605,12 @@ class SensitiveDataModuleTest {
         this.token = token;
       }
 
+      @SuppressWarnings("unused")
       public String getName() {
         return name;
       }
 
+      @SuppressWarnings("unused")
       public String getToken() {
         return token;
       }
