@@ -115,6 +115,7 @@ class DefaultApiExceptionHandlerTest {
     assertNull(response.getCode());
   }
 
+  @SuppressWarnings("null")
   @Test
   @DisplayName("Should handle MethodArgumentTypeMismatchException with INVALID_REQUEST type")
   void shouldHandleMethodArgumentTypeMismatchException() {
