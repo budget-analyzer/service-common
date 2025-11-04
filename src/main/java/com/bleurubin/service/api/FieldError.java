@@ -2,6 +2,42 @@ package com.bleurubin.service.api;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Represents a field-level validation error in an API request.
+ *
+ * <p>This class is used within {@link ApiErrorResponse} when the error type is {@link
+ * ApiErrorType#VALIDATION_ERROR}. It provides detailed information about which field failed
+ * validation, what value was rejected, and why.
+ *
+ * <p>Example usage:
+ *
+ * <pre>
+ * FieldError error = FieldError.of(
+ *     "email",
+ *     "must be a valid email address",
+ *     "invalid@email"
+ * );
+ * </pre>
+ *
+ * <p>In JSON responses, field errors appear in the {@code fieldErrors} array:
+ *
+ * <pre>
+ * {
+ *   "type": "VALIDATION_ERROR",
+ *   "message": "One or more fields have validation errors",
+ *   "fieldErrors": [
+ *     {
+ *       "field": "email",
+ *       "message": "must be a valid email address",
+ *       "rejectedValue": "invalid@email"
+ *     }
+ *   ]
+ * }
+ * </pre>
+ *
+ * @see ApiErrorResponse
+ * @see ApiErrorType#VALIDATION_ERROR
+ */
 @Schema(description = "Field-level validation error details")
 public class FieldError {
 
@@ -25,6 +61,13 @@ public class FieldError {
 
   private FieldError() {}
 
+  /**
+   * Private constructor for creating field error instances.
+   *
+   * @param field the field name that failed validation
+   * @param message the validation error message
+   * @param rejectedValue the value that was rejected
+   */
   private FieldError(String field, String message, Object rejectedValue) {
     this.field = field;
     this.message = message;
@@ -43,6 +86,14 @@ public class FieldError {
     return rejectedValue;
   }
 
+  /**
+   * Static factory method for creating a FieldError instance.
+   *
+   * @param field the field name that failed validation
+   * @param message the validation error message
+   * @param rejectedValue the value that was rejected
+   * @return a new FieldError instance
+   */
   public static FieldError of(String field, String message, Object rejectedValue) {
     return new FieldError(field, message, rejectedValue);
   }

@@ -265,6 +265,8 @@ transactionRepository.findByIdActive(id)
   - **First sentence MUST end with a period (`.`)** - This is enforced by the `SummaryJavadoc` Checkstyle rule
   - The first sentence should be a concise summary (appears in method/class listings)
   - Use proper punctuation throughout
+  - **DO NOT add Javadoc to getter/setter methods** - Their purpose is self-evident from field documentation
+  - Exception: Builder methods and methods with special behavior may have minimal single-line Javadoc in order to suppress checkstyle warnings
 
   **Examples:**
 
@@ -285,12 +287,41 @@ transactionRepository.findByIdActive(id)
    */
   public static String mask(String value, int showLast) { }
 
+  // ✅ CORRECT - Getters/setters without Javadoc
+  /** Field that stores the user's email address. */
+  private String email;
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  // ✅ CORRECT - Builder methods with minimal Javadoc
+  /** Sets the error type. */
+  public Builder type(ApiErrorType type) {
+    response.type = type;
+    return this;
+  }
+
   // ❌ INCORRECT - Missing period at end of first sentence
   /** Converts object to JSON string with sensitive fields masked */
   public static String toJson(Object object) { }
 
   /** Header name for correlation ID */
   public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+
+  // ❌ INCORRECT - Unnecessary Javadoc on getters/setters
+  /**
+   * Returns the email address.
+   *
+   * @return the email address
+   */
+  public String getEmail() {
+    return email;
+  }
   ```
 
   **Key Points:**
@@ -298,6 +329,8 @@ transactionRepository.findByIdActive(id)
   - Multi-line Javadoc: First line after `/**` must end with period
   - Field documentation: Even short descriptions need periods
   - Always end the summary sentence with a period, even if it's obvious
+  - Getters/setters: No Javadoc needed (field documentation is sufficient)
+  - Builder methods: Minimal single-line Javadoc is acceptable
 
 **Build Commands:**
 
@@ -804,7 +837,7 @@ public class BudgetAnalyzerApplication {
 ```
 
 **Checkstyle errors:**
-Review `config/checkstyle/checkstyle.xml` rules and fix violations.
+Review `config/checkstyle/checkstyle.xml` rules and fix violations including warnings if possible.
 
 **Test failures:**
 ```bash
@@ -842,6 +875,42 @@ When working on this project:
 - **Always run these commands before committing:**
   1. `./gradlew spotlessApply` - Format code
   2. `./gradlew clean build` - Build and test everything
+
+### Checkstyle Warning Handling
+
+**CRITICAL**: When verifying the build with `./gradlew clean build`, always pay attention to Checkstyle warnings.
+
+**Required Actions:**
+1. **Always read build output carefully** - Look for Checkstyle warnings even if the build succeeds
+2. **Attempt to fix all Checkstyle warnings** - Treat warnings as errors that need immediate resolution
+3. **Common Checkstyle issues to watch for:**
+   - Javadoc missing periods at end of first sentence
+   - Missing Javadoc comments on public methods/classes
+   - Import statement violations (wildcard imports, Hibernate imports)
+   - Line length violations
+   - Naming convention violations
+   - Indentation issues
+4. **If unable to fix warnings:**
+   - Document the specific warning message
+   - Explain why it cannot be fixed
+   - Notify the user immediately with the warning details
+   - Provide the file path and line number where the warning occurs
+5. **Never ignore warnings** - Even if the build passes, Checkstyle warnings indicate code quality issues that must be addressed
+
+**Example Response Pattern:**
+```
+Build completed successfully, but found Checkstyle warnings:
+- File: src/main/java/com/bleurubin/service/Example.java:42
+- Issue: Javadoc comment missing period at end of first sentence
+- Action: Fixed by adding period to Javadoc summary
+
+OR
+
+Build completed with Checkstyle warnings that I cannot resolve:
+- File: src/main/java/com/bleurubin/service/Example.java:42
+- Warning: [specific warning message]
+- Reason: [explanation of why it cannot be fixed]
+```
 
 ### Library Design Principles
 

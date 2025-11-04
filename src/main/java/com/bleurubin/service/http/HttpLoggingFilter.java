@@ -42,10 +42,43 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   private final HttpLoggingProperties properties;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
+  /**
+   * Constructs an HttpLoggingFilter with the specified configuration properties.
+   *
+   * @param properties the HTTP logging configuration properties
+   */
   public HttpLoggingFilter(HttpLoggingProperties properties) {
     this.properties = properties;
   }
 
+  /**
+   * Logs HTTP request and response details with sensitive data masking.
+   *
+   * <p>This method performs the following operations:
+   *
+   * <ul>
+   *   <li>Checks if logging is enabled and if the path should be logged
+   *   <li>Wraps request and response to enable content caching
+   *   <li>Logs request details before processing
+   *   <li>Processes the request through the filter chain
+   *   <li>Logs response details after processing with duration
+   *   <li>Copies cached response content back to actual response
+   * </ul>
+   *
+   * <p>The filter skips logging if:
+   *
+   * <ul>
+   *   <li>Logging is disabled in properties
+   *   <li>The request path matches an exclude pattern
+   *   <li>Error-only logging is enabled and the response is 2xx/3xx
+   * </ul>
+   *
+   * @param request the HTTP request
+   * @param response the HTTP response
+   * @param filterChain the filter chain to continue processing
+   * @throws ServletException if a servlet error occurs
+   * @throws IOException if an I/O error occurs
+   */
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
