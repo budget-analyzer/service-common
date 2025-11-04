@@ -35,6 +35,8 @@ import com.bleurubin.core.csv.CsvRow;
  *   <li>Empty header columns are skipped
  *   <li>Empty CSV files are handled gracefully
  *   <li>Line numbers for error reporting
+ *   <li>Handles rows with fewer columns than headers (missing values mapped to empty strings)
+ *   <li>Handles rows with more columns than headers (extra columns ignored)
  * </ul>
  *
  * <p>This is a Spring component and can be injected as a dependency wherever CSV parsing is needed.
@@ -120,6 +122,13 @@ public class OpenCsvParser implements CsvParser {
    * <p>Empty header names are skipped to avoid mapping empty strings. All cell values are trimmed
    * of leading and trailing whitespace.
    *
+   * <p>Handles mismatched column counts:
+   *
+   * <ul>
+   *   <li>If row has fewer columns than headers, missing columns are mapped to empty strings
+   *   <li>If row has more columns than headers, extra columns are ignored
+   * </ul>
+   *
    * @param headers the list of column headers
    * @param row the array of cell values for this row
    * @return a map of header names to cell values
@@ -127,9 +136,12 @@ public class OpenCsvParser implements CsvParser {
   private Map<String, String> buildDataMap(List<String> headers, String[] row) {
     var rowMap = new HashMap<String, String>();
 
-    for (int i = 0; i < row.length; i++) {
-      if (!headers.get(i).isEmpty()) {
-        rowMap.put(headers.get(i), row[i].trim());
+    for (int i = 0; i < headers.size(); i++) {
+      var header = headers.get(i);
+      if (!header.isEmpty()) {
+        // If row has fewer columns than headers, use empty string for missing values
+        var value = (i < row.length) ? row[i].trim() : "";
+        rowMap.put(header, value);
       }
     }
 

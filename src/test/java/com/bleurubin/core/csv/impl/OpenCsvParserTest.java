@@ -272,6 +272,262 @@ class OpenCsvParserTest {
     assertEquals("Boston", secondRow.values().get("City"));
   }
 
+  @Test
+  void shouldHandleRowsWithFewerColumnsThanHeaders() throws IOException {
+    var csvContent = "Name,Age,City\nJohn,30\nAlice";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(3, csvData.headers().size());
+    assertEquals(2, csvData.rows().size());
+
+    // First row has 2 values (missing City)
+    var firstRow = csvData.rows().get(0);
+    assertEquals("John", firstRow.values().get("Name"));
+    assertEquals("30", firstRow.values().get("Age"));
+    // OpenCSV returns empty string for missing columns
+    assertEquals("", firstRow.values().get("City"));
+
+    // Second row has 1 value (missing Age and City)
+    var secondRow = csvData.rows().get(1);
+    assertEquals("Alice", secondRow.values().get("Name"));
+    assertEquals("", secondRow.values().get("Age"));
+    assertEquals("", secondRow.values().get("City"));
+  }
+
+  @Test
+  void shouldHandleRowsWithMoreColumnsThanHeaders() throws IOException {
+    var csvContent = "Name,Age\nJohn,30,NYC,Extra";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.headers().size());
+    assertEquals(1, csvData.rows().size());
+
+    // Row has 4 values but only 2 headers
+    var firstRow = csvData.rows().get(0);
+    assertEquals("John", firstRow.values().get("Name"));
+    assertEquals("30", firstRow.values().get("Age"));
+    // Extra columns beyond headers are ignored by our implementation
+    assertEquals(2, firstRow.values().size());
+  }
+
+  @Test
+  void shouldHandleInconsistentColumnCountsAcrossRows() throws IOException {
+    var csvContent =
+        "ID,Name,Email\n1,Alice,alice@example.com\n2,Bob\n3,Carol,carol@example.com,Extra";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(3, csvData.headers().size());
+    assertEquals(3, csvData.rows().size());
+
+    // First row - all columns present
+    var row1 = csvData.rows().get(0);
+    assertEquals("1", row1.values().get("ID"));
+    assertEquals("Alice", row1.values().get("Name"));
+    assertEquals("alice@example.com", row1.values().get("Email"));
+
+    // Second row - missing Email column
+    var row2 = csvData.rows().get(1);
+    assertEquals("2", row2.values().get("ID"));
+    assertEquals("Bob", row2.values().get("Name"));
+    assertEquals("", row2.values().get("Email"));
+
+    // Third row - has extra column beyond headers
+    var row3 = csvData.rows().get(2);
+    assertEquals("3", row3.values().get("ID"));
+    assertEquals("Carol", row3.values().get("Name"));
+    assertEquals("carol@example.com", row3.values().get("Email"));
+  }
+
+  @Test
+  void shouldHandleUtf8CharactersInContent() throws IOException {
+    var csvContent = "Name,Description\nJosé,Café au lait\n李明,中文测试\nMüller,Größe";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(3, csvData.rows().size());
+
+    var row1 = csvData.rows().get(0);
+    assertEquals("José", row1.values().get("Name"));
+    assertEquals("Café au lait", row1.values().get("Description"));
+
+    var row2 = csvData.rows().get(1);
+    assertEquals("李明", row2.values().get("Name"));
+    assertEquals("中文测试", row2.values().get("Description"));
+
+    var row3 = csvData.rows().get(2);
+    assertEquals("Müller", row3.values().get("Name"));
+    assertEquals("Größe", row3.values().get("Description"));
+  }
+
+  @Test
+  void shouldHandleUtf8WithBomByteOrderMark() throws IOException {
+    // UTF-8 BOM is EF BB BF
+    var csvContentWithBom =
+        "\uFEFFName,Age,City\nJohn,30,NYC"; // \uFEFF is the BOM character in Java
+    var inputStream = createInputStream(csvContentWithBom);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    // OpenCSV should handle BOM, but first header might include it
+    // This test documents current behavior
+    assertNotNull(csvData.headers());
+    assertEquals(3, csvData.headers().size());
+    assertTrue(
+        csvData.headers().get(0).equals("Name") || csvData.headers().get(0).equals("\uFEFFName"));
+  }
+
+  @Test
+  void shouldHandleUtf16EncodedContent() throws IOException {
+    var csvContent = "Name,Age,City\nJohn,30,NYC\nAlice,25,Boston";
+    var inputStream =
+        new ByteArrayInputStream(csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_16));
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    // This test documents that UTF-16 may not be automatically detected
+    // The parser should still attempt to parse, but results may vary
+    assertNotNull(csvData);
+    assertNotNull(csvData.headers());
+    assertNotNull(csvData.rows());
+  }
+
+  @Test
+  void shouldHandleIso88591EncodedContent() throws IOException {
+    // ISO-8859-1 (Latin-1) encoding test with special characters
+    var csvContent = "Name,Description\nCafé,Naïve résumé";
+    var inputStream =
+        new ByteArrayInputStream(csvContent.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    // This test documents encoding behavior - results depend on system default encoding
+    assertNotNull(csvData);
+    assertNotNull(csvData.headers());
+    assertNotNull(csvData.rows());
+  }
+
+  @Test
+  void shouldHandleEmojiCharacters() throws IOException {
+    var csvContent = "Product,Rating\nCoffee,☕ Excellent! 😍\nPizza,🍕 Amazing! 🎉";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.rows().size());
+
+    var row1 = csvData.rows().get(0);
+    assertEquals("Coffee", row1.values().get("Product"));
+    assertEquals("☕ Excellent! 😍", row1.values().get("Rating"));
+
+    var row2 = csvData.rows().get(1);
+    assertEquals("Pizza", row2.values().get("Product"));
+    assertEquals("🍕 Amazing! 🎉", row2.values().get("Rating"));
+  }
+
+  @Test
+  void shouldHandleDifferentLineEndings() throws IOException {
+    // Test CRLF (Windows style)
+    var csvContentCrlf = "Name,Age\r\nJohn,30\r\nAlice,25";
+    var inputStreamCrlf = createInputStream(csvContentCrlf);
+
+    var csvDataCrlf = parser.parseCsvInputStream(inputStreamCrlf, "test.csv", "user-data");
+
+    assertEquals(2, csvDataCrlf.headers().size());
+    assertEquals(2, csvDataCrlf.rows().size());
+    assertEquals("John", csvDataCrlf.rows().get(0).values().get("Name"));
+
+    // Test CR only (old Mac style)
+    var csvContentCr = "Name,Age\rJohn,30\rAlice,25";
+    var inputStreamCr = createInputStream(csvContentCr);
+
+    var csvDataCr = parser.parseCsvInputStream(inputStreamCr, "test.csv", "user-data");
+
+    assertEquals(2, csvDataCr.headers().size());
+    assertEquals(2, csvDataCr.rows().size());
+    assertEquals("John", csvDataCr.rows().get(0).values().get("Name"));
+  }
+
+  @Test
+  void shouldHandleQuotedFieldsWithEmbeddedNewlines() throws IOException {
+    var csvContent = "Name,Address\nJohn,\"123 Main St\nApt 4B\nNew York\"\nAlice,456 Oak Ave";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.rows().size());
+
+    var firstRow = csvData.rows().get(0);
+    assertEquals("John", firstRow.values().get("Name"));
+    assertEquals("123 Main St\nApt 4B\nNew York", firstRow.values().get("Address"));
+
+    var secondRow = csvData.rows().get(1);
+    assertEquals("Alice", secondRow.values().get("Name"));
+    assertEquals("456 Oak Ave", secondRow.values().get("Address"));
+  }
+
+  @Test
+  void shouldHandleEscapedQuotesInQuotedFields() throws IOException {
+    var csvContent = "Name,Quote\nJohn,\"He said \"\"Hello\"\"\"\nAlice,\"She replied \"\"Hi\"\"\"";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.rows().size());
+
+    var firstRow = csvData.rows().get(0);
+    assertEquals("John", firstRow.values().get("Name"));
+    assertEquals("He said \"Hello\"", firstRow.values().get("Quote"));
+
+    var secondRow = csvData.rows().get(1);
+    assertEquals("Alice", secondRow.values().get("Name"));
+    assertEquals("She replied \"Hi\"", secondRow.values().get("Quote"));
+  }
+
+  @Test
+  void shouldHandleVeryLongLines() throws IOException {
+    // Create a row with a very long field (10,000 characters)
+    var longValue = "A".repeat(10000);
+    var csvContent = "ID,Data\n1," + longValue + "\n2,Short";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.rows().size());
+
+    var firstRow = csvData.rows().get(0);
+    assertEquals("1", firstRow.values().get("ID"));
+    assertEquals(longValue, firstRow.values().get("Data"));
+
+    var secondRow = csvData.rows().get(1);
+    assertEquals("2", secondRow.values().get("ID"));
+    assertEquals("Short", secondRow.values().get("Data"));
+  }
+
+  @Test
+  void shouldHandleTabsInValues() throws IOException {
+    var csvContent = "Name,Notes\nJohn,\"First\tSecond\tThird\"\nAlice,Normal text";
+    var inputStream = createInputStream(csvContent);
+
+    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+
+    assertEquals(2, csvData.rows().size());
+
+    var firstRow = csvData.rows().get(0);
+    assertEquals("John", firstRow.values().get("Name"));
+    assertEquals("First\tSecond\tThird", firstRow.values().get("Notes"));
+
+    var secondRow = csvData.rows().get(1);
+    assertEquals("Alice", secondRow.values().get("Name"));
+    assertEquals("Normal text", secondRow.values().get("Notes"));
+  }
+
   private InputStream createInputStream(String content) {
     return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
   }
