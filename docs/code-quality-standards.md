@@ -1,0 +1,377 @@
+# Code Quality Standards - Budget Analyzer Microservices
+
+## Overview
+
+All Budget Analyzer microservices follow strict code quality standards enforced through automated tooling and code review.
+
+## Spotless Configuration
+
+**Purpose**: Automatic code formatting with Google Java Format
+
+**Features**:
+- Google Java Format 1.17.0
+- Automatic import ordering: `java` → `javax` → `jakarta` → `org` → `com` → `org.budgetanalyzer`
+- Trailing whitespace removal
+- Files end with newline
+- Unused import removal
+
+**Usage**:
+```bash
+# Format code
+./gradlew spotlessApply
+
+# Check formatting without applying
+./gradlew spotlessCheck
+```
+
+## Checkstyle Enforcement
+
+**Purpose**: Static code analysis for style and best practices
+
+**Configuration**:
+- Version 12.0.1
+- Custom rules in `config/checkstyle/checkstyle.xml`
+- Enforces Hibernate import ban
+- Enforces naming conventions
+- Validates Javadoc completeness
+
+**Common Issues**:
+- Javadoc missing periods at end of first sentence
+- Missing Javadoc on public methods/classes
+- Wildcard imports (`import java.util.*`)
+- Hibernate-specific imports (`import org.hibernate.*`)
+- Line length violations (120 characters)
+- Naming convention violations
+
+## Build Commands
+
+**CRITICAL**: Always use these two commands in sequence:
+
+```bash
+# 1. Format code (always run first)
+./gradlew spotlessApply
+
+# 2. Build and test (always run second)
+./gradlew clean build
+```
+
+The `clean build` command will:
+- Clean previous build artifacts
+- Compile all source code
+- Run Spotless checks
+- Run Checkstyle
+- Run all unit and integration tests
+- Build the JAR file
+
+**Never use** individual gradle tasks like `check`, `bootJar`, `checkstyleMain`, etc. Always use the full `clean build` sequence.
+
+## Variable Declarations
+
+**Rule**: Use `var` whenever possible for local variables to reduce verbosity and improve readability.
+
+### When to Use `var`
+```java
+// ✅ GOOD - Type is obvious from right-hand side
+var transaction = new Transaction();
+var list = new ArrayList<String>();
+var result = repository.findById(id);
+var startDate = LocalDate.now();
+```
+
+### When NOT to Use `var`
+```java
+// ❌ Use explicit type when casting is the only alternative
+Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
+
+// ❌ Use explicit type when return type isn't obvious
+TransactionService service = createTransactionService();  // Factory method
+```
+
+## Import Rules
+
+**Rule**: No wildcard imports - always use explicit imports
+
+```java
+// ❌ WRONG - Wildcard import
+import java.util.*;
+import org.budgetanalyzer.service.*;
+
+// ✅ CORRECT - Explicit imports
+import java.util.List;
+import java.util.ArrayList;
+import org.budgetanalyzer.service.TransactionService;
+import org.budgetanalyzer.service.CurrencyService;
+```
+
+**Import Order** (enforced by Spotless):
+1. `java.*`
+2. `javax.*`
+3. `jakarta.*`
+4. `org.*`
+5. `com.*`
+6. `org.budgetanalyzer.*`
+
+## Method Formatting
+
+### Return Statement Spacing
+
+**Rules**:
+- **3+ lines of logic**: Add blank line before `return`
+- **1-2 line combo**: NO blank line before `return`
+- **Single-line methods**: No blank line
+- **Guard clauses**: No blank line before early `return`
+- **Direct returns**: Don't create unnecessary variables
+
+### Examples
+
+**✅ CORRECT: Direct return (no intermediate variable)**
+```java
+public String toJson(Object object) {
+    return objectMapper.writeValueAsString(object);
+}
+```
+
+**✅ CORRECT: 2-line combo (NO blank line)**
+```java
+public TransactionResponse getById(Long id) {
+    var transaction = transactionService.getById(id);
+    return TransactionResponse.from(transaction);
+}
+```
+
+**✅ CORRECT: Multi-step logic (3+ lines with blank line)**
+```java
+public Transaction createTransaction(TransactionRequest request) {
+    var entity = request.toEntity();
+    validateTransaction(entity);
+
+    return transactionRepository.save(entity);
+}
+```
+
+**✅ CORRECT: Simple getter**
+```java
+public String getBankName() {
+    return bankName;
+}
+```
+
+**✅ CORRECT: Guard clause (no blank line)**
+```java
+public void validate(Transaction transaction) {
+    if (transaction.getDate() == null) {
+        throw new IllegalArgumentException("Date required");
+    }
+
+    // ... more logic
+}
+```
+
+**❌ WRONG: Unnecessary variable**
+```java
+public String toJson(Object object) {
+    var json = objectMapper.writeValueAsString(object);
+    return json;  // Variable adds no value
+}
+```
+
+**❌ WRONG: Blank line in 2-line combo**
+```java
+public TransactionResponse getById(Long id) {
+    var transaction = transactionService.getById(id);
+
+    return TransactionResponse.from(transaction);
+}
+```
+
+**❌ WRONG: Missing blank line (3+ lines)**
+```java
+public Transaction toEntity() {
+    var entity = new Transaction();
+    entity.setBankName(bankName);
+    entity.setDate(date);
+    return entity;  // Needs blank line before this
+}
+```
+
+## Javadoc Comments
+
+**CRITICAL**: First sentence MUST end with a period (`.`) - enforced by Checkstyle `SummaryJavadoc` rule
+
+### Why This Matters
+- First sentence appears in method/class listings
+- Used by IDEs for quick documentation
+- Javadoc tools extract first sentence as summary
+
+### Format Rules
+- **Single-line**: `/** Summary sentence here. */`
+- **Multi-line**: First line after `/**` must end with period
+- **Fields**: Even short descriptions need periods
+- **Always**: End the summary sentence with a period
+
+### Examples
+
+**✅ CORRECT: Single-line with period**
+```java
+/** Converts object to JSON string with sensitive fields masked. */
+public static String toJson(Object object) { }
+
+/** Header name for correlation ID. */
+public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+```
+
+**✅ CORRECT: Multi-line with period**
+```java
+/**
+ * Masks a sensitive string value.
+ *
+ * @param value The value to mask
+ * @param showLast Number of characters to show at the end
+ * @return Masked value
+ */
+public static String mask(String value, int showLast) { }
+```
+
+**❌ WRONG: Missing period**
+```java
+/** Converts object to JSON string with sensitive fields masked */
+public static String toJson(Object object) { }
+
+/** Header name for correlation ID */
+public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+```
+
+## Checkstyle Warning Handling
+
+**CRITICAL**: When running `./gradlew clean build`, **always** pay attention to Checkstyle warnings.
+
+### Required Actions
+
+1. **Read build output carefully** - Look for Checkstyle warnings even if build succeeds
+2. **Treat warnings as errors** - Fix all warnings immediately
+3. **Never ignore warnings** - Even passing builds with warnings indicate quality issues
+
+### Common Warnings
+
+| Warning | Cause | Fix |
+|---------|-------|-----|
+| `SummaryJavadoc` | Javadoc first sentence missing period | Add `.` at end |
+| `JavadocMethod` | Missing Javadoc on public method | Add `/** ... */` comment |
+| `AvoidStarImport` | Wildcard import used | Expand to explicit imports |
+| `IllegalImport` | Hibernate import detected | Use `jakarta.persistence.*` |
+| `LineLength` | Line exceeds 120 characters | Break into multiple lines |
+| `NeedBraces` | Missing braces on if/for/while | Add `{ }` braces |
+
+### Response Pattern
+
+When encountering warnings, follow this pattern:
+
+**If fixable:**
+```
+Build completed successfully, but found Checkstyle warnings:
+- File: src/main/java/org/budgetanalyzer/service/Example.java:42
+- Issue: Javadoc comment missing period at end of first sentence
+- Action: Fixed by adding period to Javadoc summary
+
+Rerunning build to verify fix...
+```
+
+**If not fixable:**
+```
+Build completed with Checkstyle warnings that I cannot resolve:
+- File: src/main/java/org/budgetanalyzer/service/Example.java:42
+- Warning: [specific warning message]
+- Reason: [explanation of why it cannot be fixed]
+
+Please advise on how to proceed.
+```
+
+## Code Review Checklist
+
+Before committing code, verify:
+
+- [ ] `./gradlew spotlessApply` has been run
+- [ ] `./gradlew clean build` passes without errors
+- [ ] No Checkstyle warnings in build output
+- [ ] All public methods have Javadoc
+- [ ] Javadoc first sentences end with periods
+- [ ] No wildcard imports
+- [ ] No Hibernate-specific imports
+- [ ] `var` used where appropriate
+- [ ] Return statement spacing follows rules
+- [ ] All tests pass
+
+## IDE Configuration
+
+### IntelliJ IDEA
+
+**Import Code Style**:
+1. Install Google Java Format plugin
+2. Settings → Editor → Code Style → Java
+3. Import `config/intellij-java-google-style.xml` (if provided)
+4. Enable "Optimize imports on the fly"
+
+**Checkstyle Plugin**:
+1. Install Checkstyle-IDEA plugin
+2. Settings → Tools → Checkstyle
+3. Add configuration file: `config/checkstyle/checkstyle.xml`
+4. Set as active configuration
+5. Enable real-time scanning
+
+### VS Code
+
+**Java Extension Pack**:
+1. Install "Extension Pack for Java"
+2. Install "Checkstyle for Java"
+3. Configure formatting:
+   ```json
+   {
+     "java.format.settings.url": "config/eclipse-java-google-style.xml",
+     "java.checkstyle.configuration": "config/checkstyle/checkstyle.xml"
+   }
+   ```
+
+## Automated Checks in CI/CD
+
+**GitHub Actions** (or Jenkins):
+```yaml
+- name: Check code formatting
+  run: ./gradlew spotlessCheck
+
+- name: Run Checkstyle
+  run: ./gradlew checkstyleMain checkstyleTest
+
+- name: Build and test
+  run: ./gradlew clean build
+```
+
+Failures in any of these steps should block merge/deployment.
+
+## Troubleshooting
+
+### Spotless Failures
+```bash
+# Fix formatting violations
+./gradlew spotlessApply
+```
+
+### Checkstyle Failures
+```bash
+# View detailed Checkstyle report
+./gradlew checkstyleMain
+cat build/reports/checkstyle/main.html
+```
+
+### Build Failures
+```bash
+# Clean and rebuild from scratch
+./gradlew clean spotlessApply
+./gradlew clean build
+```
+
+## Resources
+
+- [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
+- [Checkstyle Documentation](https://checkstyle.org/)
+- [Spotless Plugin](https://github.com/diffplug/spotless)
+- Project-specific rules: `config/checkstyle/checkstyle.xml`
