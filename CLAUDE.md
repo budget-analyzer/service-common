@@ -28,7 +28,8 @@ See [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) for:
 **Discovery**:
 ```bash
 # View package structure
-find src/main/java -type d | grep -E "org/budgetanalyzer" | head -20
+tree src/main/java/org/budgetanalyzer -L 2
+# Or without tree: find src/main/java -type d | grep -E "org/budgetanalyzer" | head -20
 
 # Find all base entities
 grep -r "@MappedSuperclass" src/
