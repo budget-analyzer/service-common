@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: service-common-test
+
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    url: jdbc:h2:mem:autoconfigtest
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    serialization:
+      indent_output: true
+
+# HTTP Logging configuration for tests
+budgetanalyzer:
+  service:
+    http-logging:
+      enabled: true
+      include-request-headers: true
+      include-response-headers: true
+      include-request-body: true
+      include-response-body: true
+      max-body-size: 1024
+      sensitive-headers:
+        - Authorization
+        - Cookie
+        - Set-Cookie
+
+logging:
+  level:
+    org.budgetanalyzer: DEBUG
+    org.springframework.web: DEBUG

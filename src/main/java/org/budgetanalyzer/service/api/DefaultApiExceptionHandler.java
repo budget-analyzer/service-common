@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -70,6 +71,52 @@ public class DefaultApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(InvalidRequestException exception, WebRequest request) {
     return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+  }
+
+  /**
+   * Handles {@link MethodArgumentNotValidException} and returns HTTP 400 Bad Request.
+   *
+   * <p>This exception is thrown when Spring validation fails on a {@code @Valid} annotated request
+   * body. The response includes field-level error details for each validation failure.
+   *
+   * @param exception the exception thrown when request body validation fails
+   * @param request the web request context
+   * @return standardized error response with VALIDATION_ERROR type and field errors
+   */
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  public ApiErrorResponse handle(MethodArgumentNotValidException exception, WebRequest request) {
+    var fieldErrors =
+        exception.getBindingResult().getAllErrors().stream()
+            .filter(error -> error instanceof org.springframework.validation.FieldError)
+            .map(
+                error -> {
+                  var springFieldError = (org.springframework.validation.FieldError) error;
+                  return FieldError.of(
+                      springFieldError.getField(),
+                      error.getDefaultMessage(),
+                      springFieldError.getRejectedValue());
+                })
+            .toList();
+
+    var message =
+        "Validation failed for "
+            + fieldErrors.size()
+            + " field"
+            + (fieldErrors.size() != 1 ? "s" : "");
+
+    log.warn(
+        "Handled exception type: VALIDATION_ERROR exception: {} field count: {} message: {}",
+        exception.getClass(),
+        fieldErrors.size(),
+        message,
+        exception);
+
+    return ApiErrorResponse.builder()
+        .type(ApiErrorType.VALIDATION_ERROR)
+        .message(message)
+        .fieldErrors(fieldErrors)
+        .build();
   }
 
   /**
