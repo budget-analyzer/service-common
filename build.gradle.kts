@@ -1,7 +1,7 @@
 plugins {
     java
     checkstyle
-    id("org.springframework.boot") version "3.5.6" apply false
+    id("org.springframework.boot") version "3.5.7" apply false
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "8.0.0"
     id("maven-publish")
@@ -24,7 +24,7 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.6")
+        mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.7")
     }
 }
 
@@ -36,9 +36,6 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    // the default jupiter packaged in the 3.5.6 starter is 5.10.0; overriding to 5.12.2
-    // revisit when we upgrade spring boot version
-    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testRuntimeOnly("com.h2database:h2")
 }
