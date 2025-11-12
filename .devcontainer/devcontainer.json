@@ -4,6 +4,8 @@
   "service": "claude-dev",
   "workspaceFolder": "/workspace/service-common",
   "shutdownAction": "none",
+
+  "initializeCommand": "bash ${localWorkspaceFolder}/../orchestration/claude-code-sandbox/setup-env.sh",
   
   "customizations": {
     "vscode": {
