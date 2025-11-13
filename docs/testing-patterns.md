@@ -319,7 +319,89 @@ class TransactionTestFixtures {
 }
 ```
 
-### 5. Test Edge Cases
+### 5. Use TestConstants for Test Data
+
+**CRITICAL**: Always use named constants from a `TestConstants` class instead of string literals or magic numbers in test values. This improves maintainability, readability, and consistency across tests.
+
+```java
+// TestConstants.java
+public final class TestConstants {
+    // Prevent instantiation
+    private TestConstants() {}
+
+    // Currency codes
+    public static final String CURRENCY_CODE_USD = "USD";
+    public static final String CURRENCY_CODE_EUR = "EUR";
+    public static final String CURRENCY_CODE_INVALID = "INVALID";
+
+    // Test amounts
+    public static final String AMOUNT_100 = "100.00";
+    public static final String AMOUNT_NEGATIVE = "-50.00";
+    public static final String AMOUNT_ZERO = "0.00";
+
+    // Test descriptions
+    public static final String DESCRIPTION_TEST = "Test transaction";
+    public static final String DESCRIPTION_EMPTY = "";
+
+    // Test IDs
+    public static final Long ID_1 = 1L;
+    public static final Long ID_NONEXISTENT = 999L;
+
+    // Test dates
+    public static final String DATE_2024_01_01 = "2024-01-01";
+}
+```
+
+```java
+// ❌ BAD - Magic strings and numbers
+@Test
+void shouldCreateTransaction() {
+    var transaction = new Transaction();
+    transaction.setAmount(new BigDecimal("100.00"));
+    transaction.setDescription("Test");
+    transaction.setCurrencyCode("USD");
+}
+
+@Test
+void shouldRejectInvalidCurrencyCode() {
+    mockMvc.perform(post("/api/v1/transactions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"currencyCode\": \"INVALID\"}"))
+        .andExpect(status().isBadRequest());
+}
+
+// ✅ GOOD - Using TestConstants
+@Test
+void shouldCreateTransaction() {
+    var transaction = new Transaction();
+    transaction.setAmount(new BigDecimal(TestConstants.AMOUNT_100));
+    transaction.setDescription(TestConstants.DESCRIPTION_TEST);
+    transaction.setCurrencyCode(TestConstants.CURRENCY_CODE_USD);
+}
+
+@Test
+void shouldRejectInvalidCurrencyCode() {
+    mockMvc.perform(post("/api/v1/transactions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"currencyCode\": \"" + TestConstants.CURRENCY_CODE_INVALID + "\"}"))
+        .andExpect(status().isBadRequest());
+}
+```
+
+**Benefits**:
+- **Consistency**: Same test value used across all tests
+- **Maintainability**: Change value in one place
+- **Readability**: `CURRENCY_CODE_USD` is clearer than `"USD"`
+- **Discoverability**: IDE autocomplete shows all available constants
+- **Type safety**: Constants have clear types and naming patterns
+
+**Organization**:
+- Group related constants together (currencies, amounts, dates, etc.)
+- Use descriptive names that indicate the value's purpose
+- Include edge case values (empty, null, invalid, boundary values)
+- Place `TestConstants` in `src/test/java/org/budgetanalyzer/{service}/util/`
+
+### 6. Test Edge Cases
 
 ```java
 @Test
@@ -335,7 +417,7 @@ void shouldHandleVeryLargeNumbers() { }
 void shouldHandleSpecialCharacters() { }
 ```
 
-### 6. Don't Test Framework Code
+### 7. Don't Test Framework Code
 
 ```java
 // ❌ BAD - Testing JPA's save method
