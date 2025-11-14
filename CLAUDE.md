@@ -164,23 +164,23 @@ dependencies {
 
 ## Architectural Principles
 
-### 1. Production-Quality Code
+### Production-Quality Code
 All code must be production-ready. No shortcuts, prototypes, or workarounds.
 
 **When to read more**: [docs/common-patterns.md](docs/common-patterns.md) - SOLID principles, design patterns, Spring Boot patterns, database patterns, security/performance best practices.
 
-### 2. Pure JPA Only
+### Pure JPA Only
 **CRITICAL**: Use pure JPA (Jakarta Persistence API) exclusively. NO Hibernate-specific features.
 - Forbidden: `org.hibernate.*`
 - Allowed: `jakarta.persistence.*`
 
-### 3. Standardized Error Responses
+### Standardized Error Responses
 All API errors follow `ApiErrorResponse` format with error types, field-level validation, and error codes.
 
-### 4. Soft Delete Pattern
+### Soft Delete Pattern
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
 
-### 5. Code Quality Standards
+### Code Quality Standards
 - **Spotless**: Google Java Format
 - **Checkstyle**: Custom rules (including Hibernate import ban)
 - **Variable declarations**: Use `var` whenever possible
@@ -242,23 +242,22 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 6. Document changes
 
 ### Library Design Principles
-1. **Backward compatibility** - Never break existing APIs without major version bump
-2. **Minimal dependencies** - Only include essential dependencies
-3. **Clear package separation** - Core (domain-agnostic) vs. Service (Spring-specific)
-4. **Comprehensive Javadoc** - All public APIs must be documented
+**Backward compatibility** - Never break existing APIs without major version bump
+**Minimal dependencies** - Only include essential dependencies
+**Clear package separation** - Core (domain-agnostic) vs. Service (Spring-specific)
+**Comprehensive Javadoc** - All public APIs must be documented
 
 ## Notes for Claude Code
 
 ### Critical Rules
-1. **NEVER implement changes without explicit permission** - Always present a plan and wait for approval
-2. **All code must be production-quality** - No shortcuts, prototypes, or workarounds
-3. **Use pure JPA only** - No Hibernate-specific imports (`org.hibernate.*`)
-4. **Always run build commands**:
+**All code must be production-quality** - No shortcuts, prototypes, or workarounds
+**Use pure JPA only** - No Hibernate-specific imports (`org.hibernate.*`)
+**Always run build commands**:
    ```bash
    ./gradlew spotlessApply
    ./gradlew clean build
    ```
-5. **Fix Checkstyle warnings** - Treat warnings as errors requiring immediate resolution
+**Fix Checkstyle warnings** - Treat warnings as errors requiring immediate resolution
 
 ### Common Checkstyle Issues
 - Javadoc missing periods at end of first sentence
