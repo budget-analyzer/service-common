@@ -252,8 +252,14 @@ open build/reports/jacoco/test/html/index.html
 
 ### 1. Test Naming Convention
 
+**CRITICAL**: Test method names MUST clearly express expected behavior and conditions using camelCase without underscores. Use `@DisplayName` only when the functionality is not obvious from the method name alone.
+
+**Allowed patterns** (choose one and be consistent within a test class):
+- `should[Behavior]When[Condition]` - BDD style (recommended)
+- `should[Behavior]` - When condition is obvious from context
+- `[behavior][Condition]` - Direct style (e.g., `throwsExceptionWhenAmountNegative`)
 ```java
-// Pattern: should[ExpectedBehavior]When[Condition]
+// ✅ GOOD - Acceptable patterns
 @Test
 void shouldThrowExceptionWhenAmountIsNegative() { }
 
@@ -261,9 +267,34 @@ void shouldThrowExceptionWhenAmountIsNegative() { }
 void shouldReturnEmptyListWhenNoTransactionsExist() { }
 
 @Test
+void throwsExceptionWhenAmountIsNegative() { }
+
+@Test
+void returnsEmptyListWhenNoTransactionsExist() { }
+
+// ✅ GOOD - @DisplayName used only when needed for clarity
+@Test
+@DisplayName("should handle edge case where transaction date falls on leap day during DST transition")
+void shouldHandleLeapDayDstEdgeCase() { }
+
+// ❌ BAD - Underscores violate checkstyle
+@Test
+void when_amount_is_negative_then_throws_exception() { }
+
+// ❌ BAD - Unclear intent
+@Test
+void testCalculate() { }
+
+@Test
+void negativeAmount() { }
+
+// ❌ BAD - Unnecessary @DisplayName when method name is already clear
+@Test
+@DisplayName("should calculate total correctly")
 void shouldCalculateTotalCorrectly() { }
 ```
 
+**Key principle**: The method name must answer "What behavior is being verified and under what conditions?" in clear camelCase.
 ### 2. Arrange-Act-Assert Pattern
 
 ```java
