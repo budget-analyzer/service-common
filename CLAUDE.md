@@ -28,8 +28,9 @@ Changes here affect all services that depend on this library.
 
 **Quick reference**:
 - Controllers: `*Controller` + `@RestController` + thin (HTTP concerns only)
-- Services: `*Service` interface + `*ServiceImpl` implementation + `@Transactional` at this layer
+- Services: `*Service` concrete classes + `@Service` + `@Transactional` at this layer
 - Repositories: `*Repository` extends `JpaRepository<Entity, ID>`
+- Providers: `*Provider` interface + implementation (for external service boundaries only)
 - Pure JPA only: **Forbidden** `org.hibernate.*` → **Use** `jakarta.persistence.*`
 - Base entities: Extend `AuditableEntity` (timestamps) or `SoftDeletableEntity` (soft delete)
 

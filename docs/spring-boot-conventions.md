@@ -23,12 +23,23 @@ Repository Layer (data access)
 **Standard package hierarchy**:
 ```
 org.budgetanalyzer.{service-name}
-├── controller/        # REST controllers
-├── service/           # Business logic interfaces
-│   └── impl/          # Business logic implementations
+├── api/               # REST controllers
+│   ├── request/       # Request DTOs
+│   └── response/      # Response DTOs
+├── service/           # Business logic (concrete classes)
+│   ├── dto/           # Service-layer DTOs
+│   └── provider/      # External service provider interfaces & implementations
 ├── repository/        # JPA repositories
-├── dto/               # Data Transfer Objects
+│   └── spec/          # JPA Specifications (optional)
 ├── domain/            # JPA entities
+│   └── event/         # Domain events (optional)
+├── client/            # External API clients
+├── messaging/         # Messaging infrastructure (optional)
+│   ├── listener/      # Message listeners
+│   ├── publisher/     # Message publishers
+│   ├── consumer/      # Message consumers
+│   └── message/       # Message DTOs
+├── scheduler/         # Scheduled tasks (optional)
 └── config/            # Spring configuration classes
 ```
 
@@ -48,17 +59,27 @@ grep -r "@Repository" src/
 
 ### Controllers
 - **Pattern**: `*Controller`
-- **Package**: `*.controller`
+- **Package**: `*.api`
 - **Annotation**: `@RestController`
 - **Example**: `TransactionController`, `BudgetController`
+- **Request DTOs**: `*.api.request` package
+- **Response DTOs**: `*.api.response` package
 
 ### Services
-- **Pattern**: `*Service` interface + `*ServiceImpl` implementation
-- **Package**: `*.service` (interfaces), `*.service.impl` (implementations)
-- **Annotations**: `@Service` on implementation
+- **Pattern**: `*Service` (concrete classes)
+- **Package**: `*.service`
+- **Annotation**: `@Service`
+- **Example**: `TransactionService`, `BudgetService`
+- **Note**: No interface needed for internal business logic. Only use interfaces for external provider boundaries (see Providers below).
+
+### Providers
+- **Pattern**: `*Provider` interface + `*ProviderImpl` implementation
+- **Package**: `*.service.provider`
+- **Annotation**: `@Service` on implementation
 - **Example**:
-  - Interface: `TransactionService`
-  - Implementation: `TransactionServiceImpl`
+  - Interface: `ExchangeRateProvider`
+  - Implementation: `FredExchangeRateProvider`
+- **Note**: Use this pattern ONLY for external service boundaries that may have multiple implementations
 
 ### Repositories
 - **Pattern**: `*Repository`
@@ -68,9 +89,12 @@ grep -r "@Repository" src/
 - **Example**: `TransactionRepository`, `BudgetRepository`
 
 ### DTOs
-- **Pattern**: `*DTO`, `*Request`, `*Response`
-- **Package**: `*.dto`
-- **Example**: `TransactionDTO`, `CreateTransactionRequest`, `TransactionResponse`
+- **Pattern**: `*Request`, `*Response` (API layer), `*DTO` (Service layer)
+- **Packages**:
+  - `*.api.request` - API request DTOs
+  - `*.api.response` - API response DTOs
+  - `*.service.dto` - Service-layer DTOs (internal)
+- **Example**: `CreateTransactionRequest`, `TransactionResponse`, `TransactionDTO`
 
 ### Entities
 - **Pattern**: Entity name (no suffix)
@@ -172,7 +196,13 @@ public TransactionResponse getById(@PathVariable Long id) {
 ### Usage in Services
 ```java
 @Service
-public class TransactionServiceImpl implements TransactionService {
+public class TransactionService {
+    private final TransactionRepository transactionRepository;
+
+    public TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
+    }
+
     public Transaction createTransaction(Transaction transaction) {
         if (transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Transaction amount must be positive");
@@ -191,14 +221,14 @@ Service-common provides `DefaultApiExceptionHandler` that automatically converts
 
 ```java
 @Service
-public class TransactionServiceImpl implements TransactionService {
-    private final TransactionRepository repository;
+public class TransactionService {
+    private final TransactionRepository transactionRepository;
     private final AuditService auditService;
 
     // Constructor injection - no @Autowired needed in modern Spring
-    public TransactionServiceImpl(TransactionRepository repository,
-                                  AuditService auditService) {
-        this.repository = repository;
+    public TransactionService(TransactionRepository transactionRepository,
+                              AuditService auditService) {
+        this.transactionRepository = transactionRepository;
         this.auditService = auditService;
     }
 }
@@ -273,7 +303,7 @@ public ResponseEntity<ResourceResponse> create(@Valid @RequestBody CreateRequest
 **Discovery**:
 ```bash
 # Find all POST endpoints in a service
-grep -r "@PostMapping" src/main/java/*/controller/
+grep -r "@PostMapping" src/main/java/*/api/
 
 # Find examples using ResponseEntity.created
 grep -rA 10 "ResponseEntity.created" src/main/java/

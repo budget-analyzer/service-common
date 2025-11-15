@@ -195,22 +195,22 @@ static void configureRedis(DynamicPropertyRegistry registry) {
 class TransactionServiceTest {
 
     @Mock
-    private TransactionRepository repository;
+    private TransactionRepository transactionRepository;
 
     @Mock
     private AuditService auditService;
 
     @InjectMocks
-    private TransactionServiceImpl transactionService;
+    private TransactionService transactionService;
 
     @Test
     void shouldCreateTransaction() {
         var transaction = new Transaction();
-        when(repository.save(any())).thenReturn(transaction);
+        when(transactionRepository.save(any())).thenReturn(transaction);
 
         var result = transactionService.create(transaction);
 
-        verify(repository).save(transaction);
+        verify(transactionRepository).save(transaction);
         verify(auditService).logCreation(transaction);
     }
 }
@@ -685,8 +685,9 @@ src/test/java/
     │   └── TransactionControllerTest.java
     ├── service/
     │   └── TransactionServiceTest.java
-    │   └── impl/
-    │       └── TransactionServiceImplIntegrationTest.java
+    │   └── TransactionServiceIntegrationTest.java
+    │   └── provider/
+    │       └── ExchangeRateProviderIntegrationTest.java
     ├── repository/
     │   └── TransactionRepositoryIntegrationTest.java
     └── util/

@@ -147,23 +147,23 @@ private ExchangeRateProvider provider;
 ```java
 // ✅ CORRECT - Constructor injection
 @Service
-public class TransactionServiceImpl implements TransactionService {
-    private final TransactionRepository repository;
+public class TransactionService {
+    private final TransactionRepository transactionRepository;
     private final AuditService auditService;
 
     // No @Autowired needed in modern Spring
-    public TransactionServiceImpl(TransactionRepository repository,
-                                  AuditService auditService) {
-        this.repository = repository;
+    public TransactionService(TransactionRepository transactionRepository,
+                              AuditService auditService) {
+        this.transactionRepository = transactionRepository;
         this.auditService = auditService;
     }
 }
 
 // ❌ AVOID - Field injection
 @Service
-public class TransactionServiceImpl {
+public class TransactionService {
     @Autowired  // Hard to test, hides dependencies
-    private TransactionRepository repository;
+    private TransactionRepository transactionRepository;
 }
 ```
 
