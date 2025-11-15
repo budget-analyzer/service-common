@@ -102,31 +102,24 @@ find src/test/java -name "*Test.java" | head -10
 
 ## Key Features
 
-### Base Entities
-- `AuditableEntity` - Automatic `createdAt`/`updatedAt` timestamps
-- `SoftDeletableEntity` - Soft-delete support with `deleted` flag
+**Pattern**: Shared utilities and base classes for cross-cutting concerns.
 
-### Exception Hierarchy
-- Standard exceptions: `ResourceNotFoundException`, `BusinessException`, `InvalidRequestException`
-- Global exception handler with standardized error responses
-
-### HTTP Logging Infrastructure
-- `CorrelationIdFilter` - Distributed tracing with correlation IDs
-- `HttpLoggingFilter` - Request/response logging with sensitive data masking
-- Configurable via `application.yml` properties
-
-### Utilities
-- CSV parsing (`CsvParser`, `OpenCsvParser`)
-- Safe logging with automatic sensitive data redaction (`SafeLogger`)
-- OpenAPI base configuration (`BaseOpenApiConfig`)
+**Quick reference**:
+- **Base Entities**: `AuditableEntity` (timestamps), `SoftDeletableEntity` (soft delete) - See [spring-boot-conventions.md](docs/spring-boot-conventions.md)
+- **Exceptions**: `ResourceNotFoundException`, `BusinessException`, `InvalidRequestException` - See [error-handling.md](docs/error-handling.md)
+- **HTTP Logging**: `CorrelationIdFilter`, `HttpLoggingFilter` with sensitive data masking
+- **Utilities**: CSV parsing, safe logging, OpenAPI config
 
 **Discovery**:
 ```bash
-# View all utilities
-find src/main/java -name "*.java" -path "*/org/budgetanalyzer/core/*"
+# View base entities
+grep -r "@MappedSuperclass" src/
 
-# View HTTP logging configuration
-grep -r "HttpLogging" src/main/java
+# View exception hierarchy
+grep -r "extends.*Exception" src/ | grep -v "Test"
+
+# View utilities
+find src/main/java -name "*.java" -path "*/org/budgetanalyzer/core/*"
 ```
 
 ## Publishing and Consumption
