@@ -174,6 +174,22 @@ All API errors follow `ApiErrorResponse` format with error types, field-level va
 ### Soft Delete Pattern
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
 
+### Backwards Compatibility: Lockstep Upgrades
+**CRITICAL**: ALL changes to service-common MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade service-common to avoid missing small changes that break things later.
+
+**When to consult details**:
+- Determining if a change is breaking → See [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
+- Deprecating APIs → Read [Deprecation Process](docs/versioning-and-compatibility.md#3-deprecate-before-removal)
+- Database schema changes → Review [Database Migrations](docs/versioning-and-compatibility.md#database-migrations)
+- Version bumps → Check [Semantic Versioning](docs/versioning-and-compatibility.md#semantic-versioning) and [Version Bump Checklist](docs/versioning-and-compatibility.md#version-bump-checklist)
+
+**Quick reference**:
+- Add new, don't modify existing (extend rather than change)
+- Test against all consuming services before release
+- Major version bumps require coordinated migration across all services
+
+**For comprehensive compatibility guidelines, read [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) when making any service-common changes.**
+
 ### Code Quality Standards
 - **Spotless**: Google Java Format
 - **Checkstyle**: Custom rules (including Hibernate import ban)
@@ -236,9 +252,13 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 6. Document changes
 
 ### Library Design Principles
-**Backward compatibility** - Never break existing APIs without major version bump
+
+**Backward compatibility** - ALL changes must be backwards compatible to support lockstep upgrades across all microservices. Breaking changes force version fragmentation and deployment coordination problems. We upgrade all services together when we upgrade service-common to catch integration issues immediately and maintain a common platform. Add new methods/classes rather than modifying existing ones. Major version bumps require coordinated migration across all services.
+
 **Minimal dependencies** - Only include essential dependencies
+
 **Clear package separation** - Core (domain-agnostic) vs. Service (Spring-specific)
+
 **Comprehensive Javadoc** - All public APIs must be documented
 
 ## Notes for Claude Code
@@ -246,6 +266,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 ### Critical Rules
 **All code must be production-quality** - No shortcuts, prototypes, or workarounds
 **Use pure JPA only** - No Hibernate-specific imports (`org.hibernate.*`)
+**Maintain backwards compatibility** - All service-common changes must work with existing consuming services (lockstep upgrade strategy)
 **Always run build commands**:
    ```bash
    ./gradlew spotlessApply
