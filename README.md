@@ -103,10 +103,10 @@ service-common/
 
 ## Related Repositories
 
-- **Orchestration**: https://github.com/budget-analyzer/orchestration
-- **Transaction Service**: https://github.com/budget-analyzer/transaction-service
-- **Currency Service**: https://github.com/budget-analyzer/currency-service
-- **Web Frontend**: https://github.com/budget-analyzer/budget-analyzer-web
+- **Orchestration**: https://github.com/budgetanalyzer/orchestration
+- **Transaction Service**: https://github.com/budgetanalyzer/transaction-service
+- **Currency Service**: https://github.com/budgetanalyzer/currency-service
+- **Web Frontend**: https://github.com/budgetanalyzer/budget-analyzer-web
 
 ## License
 

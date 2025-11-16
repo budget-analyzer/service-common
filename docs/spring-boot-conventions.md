@@ -369,4 +369,4 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced controller:*
 
-- [AdminCurrencySeriesController.java](https://github.com/budget-analyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)
+- [AdminCurrencySeriesController.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)
