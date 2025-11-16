@@ -66,20 +66,54 @@ grep -r "@Repository" src/
 - **Response DTOs**: `*.api.response` package
 
 ### Services
-- **Pattern**: `*Service` (concrete classes)
+- **Pattern**: `*Service` (concrete classes, no interfaces)
 - **Package**: `*.service`
 - **Annotation**: `@Service`
 - **Example**: `TransactionService`, `BudgetService`
-- **Note**: No interface needed for internal business logic. Only use interfaces for external provider boundaries (see Providers below).
+- **Rule**: Internal business logic services are concrete classes only. See "When to Use Interfaces" below for the three patterns that DO require interfaces.
 
-### Providers
-- **Pattern**: `*Provider` interface + `*ProviderImpl` implementation
+### When to Use Interfaces
+
+Budget Analyzer uses interfaces in exactly THREE patterns:
+
+#### 1. Provider Pattern (External Service Boundaries)
+- **Rule**: 100% required for all external API/data source integrations
+- **Pattern**: `*Provider` interface + concrete implementation
 - **Package**: `*.service.provider`
 - **Annotation**: `@Service` on implementation
 - **Example**:
   - Interface: `ExchangeRateProvider`
-  - Implementation: `FredExchangeRateProvider`
-- **Note**: Use this pattern ONLY for external service boundaries that may have multiple implementations
+  - Implementation: `FredExchangeRateProvider`, `EcbExchangeRateProvider`
+- **Purpose**: Decouple from external services, allow multiple implementations
+- **See**: [advanced-patterns.md](advanced-patterns.md#provider-abstraction-pattern) for detailed documentation
+
+#### 2. Third-Party Library Abstraction (Avoiding Vendor Lock-in)
+- **Rule**: Required when wrapping third-party libraries we don't control
+- **Pattern**: Interface in `core.*` + implementation in `core.*.impl`
+- **Annotation**: `@Component` on implementation
+- **Example**:
+  - Interface: `CsvParser` (in `org.budgetanalyzer.core.csv`)
+  - Implementation: `OpenCsvParser` (in `org.budgetanalyzer.core.csv.impl`)
+  - Third-party: `com.opencsv:opencsv`
+- **Purpose**: Abstract third-party implementations to avoid lock-in, make switching libraries transparent to consuming code
+- **Goal**: Make interfaces as generic as possible, independent of any specific library
+
+#### 3. Repository Enhancement Pattern
+- **Rule**: Used to extend Spring Data JPA with reusable query patterns
+- **Pattern**: Interface with default methods extending `JpaSpecificationExecutor`
+- **Example**: `SoftDeleteOperations<T extends SoftDeletableEntity>`
+- **Purpose**: Add reusable query methods across all repositories (e.g., `findAllActive()`, `findByIdActive()`)
+
+#### Anti-Pattern: Internal Service Interfaces
+```java
+// ❌ WRONG - Don't create interfaces for internal services
+public interface TransactionService { }
+public class TransactionServiceImpl implements TransactionService { }
+
+// ✅ CORRECT - Internal services are concrete classes
+@Service
+public class TransactionService { }
+```
 
 ### Repositories
 - **Pattern**: `*Repository`
