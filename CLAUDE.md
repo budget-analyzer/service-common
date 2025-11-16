@@ -1,18 +1,56 @@
-# Service-Common - Shared Spring Boot Library
+# Service-Common - Shared Spring Boot Libraries
 
 ## Purpose
 
-Shared library for all Budget Analyzer Spring Boot microservices. Provides standardized implementations for exception handling, API error responses, base entities, CSV parsing, logging, and HTTP request/response logging.
+Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
+
+**service-core**: Minimal-dependency core utilities (base entities, CSV parsing, safe logging)
+**service-web**: Spring Boot web components (exception handling, API error responses, HTTP logging, OpenAPI config)
 
 **Impacts**: transaction-service, currency-service, and all future Spring Boot services.
-Changes here affect all services that depend on this library.
+Changes here affect all services that depend on these libraries.
 
-## When to Use This Library
+## Module Architecture
+
+### service-core
+**Location**: `service-core/src/main/java/org/budgetanalyzer/core/`
+
+**Purpose**: Domain-agnostic utilities with minimal dependencies
+
+**Contains**:
+- `domain/` - Base JPA entities (AuditableEntity, SoftDeletableEntity)
+- `repository/` - Repository utilities (SoftDeleteOperations)
+- `csv/` - CSV parsing (CsvParser, CsvData, OpenCsvParser)
+- `logging/` - Safe logging with sensitive data masking
+
+**Dependencies**: Spring Data JPA, Jackson, SLF4J, OpenCSV
+
+### service-web
+**Location**: `service-web/src/main/java/org/budgetanalyzer/service/`
+
+**Purpose**: Spring Boot web-specific components with auto-configuration
+
+**Contains**:
+- `exception/` - Exception hierarchy (ResourceNotFoundException, BusinessException, etc.)
+- `api/` - Error response models (ApiErrorResponse, ApiErrorType, FieldError)
+- `http/` - HTTP filters (CorrelationIdFilter, HttpLoggingFilter)
+- `config/` - Base OpenAPI configuration
+
+**Dependencies**: service-core (transitive), Spring Boot Starter Web, Spring Boot Starter Actuator, SpringDoc OpenAPI
+
+**Note**: service-web transitively includes service-core, so consuming services typically only need service-web.
+
+## When to Use These Libraries
 
 - ✅ Cross-service utilities (logging, error handling, common DTOs)
 - ✅ Shared Spring Boot configurations
 - ✅ Common dependencies and version management
 - ❌ Service-specific business logic (belongs in service repos)
+
+### Which Module to Depend On?
+
+**Most microservices → Use service-web** (includes service-core transitively)
+**Need only base entities/CSV/logging → Use service-core** (minimal dependencies)
 
 ## Spring Boot Conventions
 
@@ -38,14 +76,19 @@ Changes here affect all services that depend on this library.
 
 **Discovery**:
 ```bash
-# View package structure
-find src/main/java -type d | grep -E "org/budgetanalyzer" | head -20
+# View service-core package structure
+find service-core/src/main/java -type d | grep -E "org/budgetanalyzer"
 
-# Find all base entities
-grep -r "@MappedSuperclass" src/
+# View service-web package structure
+find service-web/src/main/java -type d | grep -E "org/budgetanalyzer"
+
+# Find all base entities (in service-core)
+grep -r "@MappedSuperclass" service-core/src/
 ```
 
 ## Exception Handling
+
+**Module**: service-web
 
 **Pattern**: Centralized `@RestControllerAdvice` handler that converts all exceptions to standardized `ApiErrorResponse` format with HTTP status codes, error types, and field-level validation messages.
 
@@ -66,11 +109,11 @@ grep -r "@MappedSuperclass" src/
 
 **Discovery**:
 ```bash
-# Find all custom exceptions
-grep -r "extends.*Exception" src/ | grep -v "Test"
+# Find all custom exceptions (in service-web)
+grep -r "extends.*Exception" service-web/src/ | grep -v "Test"
 
 # View exception handler
-cat src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
 ```
 
 ## Testing Patterns
@@ -94,10 +137,13 @@ cat src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
 
 **Discovery**:
 ```bash
-# View test structure
-find src/test/java -name "*Test.java" | head -10
+# View test structure in service-core
+find service-core/src/test/java -name "*Test.java"
 
-# Run tests with coverage
+# View test structure in service-web
+find service-web/src/test/java -name "*Test.java"
+
+# Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport
 ```
 
@@ -105,56 +151,85 @@ find src/test/java -name "*Test.java" | head -10
 
 **Pattern**: Shared utilities and base classes for cross-cutting concerns.
 
-**Quick reference**:
-- **Base Entities**: `AuditableEntity` (timestamps), `SoftDeletableEntity` (soft delete) - See [spring-boot-conventions.md](docs/spring-boot-conventions.md)
-- **Exceptions**: `ResourceNotFoundException`, `BusinessException`, `InvalidRequestException` - See [error-handling.md](docs/error-handling.md)
-- **HTTP Logging**: `CorrelationIdFilter`, `HttpLoggingFilter` with sensitive data masking
-- **Utilities**: CSV parsing, safe logging, OpenAPI config
+**Quick reference by module**:
+
+**service-core**:
+- Base Entities: `AuditableEntity` (timestamps), `SoftDeletableEntity` (soft delete)
+- CSV Parsing: `CsvParser`, `CsvData`, `OpenCsvParser`
+- Safe Logging: `SafeLogger`, `@Sensitive` annotation, `SensitiveDataModule`
+- Repository: `SoftDeleteOperations`
+
+**service-web**:
+- Exceptions: `ResourceNotFoundException`, `BusinessException`, `InvalidRequestException`, `ServiceException`
+- API Models: `ApiErrorResponse`, `ApiErrorType`, `FieldError`
+- HTTP Filters: `CorrelationIdFilter`, `HttpLoggingFilter`
+- Configuration: `BaseOpenApiConfig`, `HttpLoggingConfig`
 
 **Discovery**:
 ```bash
-# View base entities
-grep -r "@MappedSuperclass" src/
+# View base entities (service-core)
+grep -r "@MappedSuperclass" service-core/src/
 
-# View exception hierarchy
-grep -r "extends.*Exception" src/ | grep -v "Test"
+# View exception hierarchy (service-web)
+grep -r "extends.*Exception" service-web/src/ | grep -v "Test"
 
-# View utilities
-find src/main/java -name "*.java" -path "*/org/budgetanalyzer/core/*"
+# View service-core utilities
+find service-core/src/main/java -name "*.java"
+
+# View service-web components
+find service-web/src/main/java -name "*.java"
 ```
 
 ## Publishing and Consumption
 
 ### Publish to Maven Local
 ```bash
-# Build and publish
+# Build and publish both modules
 ./gradlew spotlessApply
 ./gradlew clean build
 ./gradlew publishToMavenLocal
 ```
 
-**Maven Coordinates**:
+**Maven Coordinates** (both modules published):
 ```groovy
+// service-core
 groupId: org.budgetanalyzer
-artifactId: service-common
+artifactId: service-core
+version: 0.0.1-SNAPSHOT
+
+// service-web
+groupId: org.budgetanalyzer
+artifactId: service-web
 version: 0.0.1-SNAPSHOT
 ```
 
 ### Consume in Microservices
+
+**Recommended**: Use service-web (includes service-core transitively)
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("org.budgetanalyzer:service-common:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 ```
 
-**Enable component scanning**:
+**Alternative**: Use service-core only (minimal dependencies)
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+}
+```
+
+**Enable component scanning** (only needed for service-web):
 ```java
 @SpringBootApplication(scanBasePackages = {
-    "org.budgetanalyzer.{your-service}",  // Your service
-    "org.budgetanalyzer.service"          // Service-common
+    "org.budgetanalyzer.yourservice",  // Your service
+    "org.budgetanalyzer.service"       // service-web (exception handlers, filters, config)
 })
 ```
+
+**Note**: If you only use service-core, no component scanning is needed (it contains only utilities and base classes).
 
 ## Architectural Principles
 
@@ -175,7 +250,9 @@ All API errors follow `ApiErrorResponse` format with error types, field-level va
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
 
 ### Backwards Compatibility: Lockstep Upgrades
-**CRITICAL**: ALL changes to service-common MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade service-common to avoid missing small changes that break things later.
+**CRITICAL**: ALL changes to service-core and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries to avoid missing small changes that break things later.
+
+**Note**: Both modules (service-core and service-web) are versioned together and released as a coordinated pair.
 
 **When to consult details**:
 - Determining if a change is breaking → See [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
@@ -188,7 +265,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - Test against all consuming services before release
 - Major version bumps require coordinated migration across all services
 
-**For comprehensive compatibility guidelines, read [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) when making any service-common changes.**
+**For comprehensive compatibility guidelines, read [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) when making any changes to service-core or service-web.**
 
 ### Code Quality Standards
 - **Spotless**: Google Java Format

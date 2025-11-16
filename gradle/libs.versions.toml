@@ -18,7 +18,18 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 # Spring Boot starters (versions managed by Spring Boot BOM)
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+
+# Jackson (versions managed by Spring Boot BOM)
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310" }
+
+# Logging (versions managed by Spring Boot BOM)
+slf4j-api = { module = "org.slf4j:slf4j-api" }
+
+# Apache Commons (versions managed by Spring Boot BOM)
+commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 
 # Third-party libraries with explicit versions
 opencsv = { module = "com.opencsv:opencsv", version.ref = "opencsv" }

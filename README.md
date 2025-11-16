@@ -2,18 +2,36 @@
 
 > **⚠️ Work in Progress**: This project is under active development. Features and documentation are subject to change.
 
-Shared core library for Budget Analyzer microservices - a personal finance management application.
+Shared libraries for Budget Analyzer microservices - a personal finance management application.
 
 ## Overview
 
-This module provides common functionality shared across all Budget Analyzer backend microservices, including:
+Service Common is a **multi-module Gradle project** that provides common functionality shared across all Budget Analyzer backend microservices. It consists of two modules:
 
-- Base entity classes and DTOs
-- Common utilities and helpers
-- Shared validation logic
-- OpenAPI/Swagger integration
-- CSV parsing capabilities
-- Standard Spring Boot configurations
+### service-core
+**Purpose**: Minimal-dependency core utilities for microservices
+
+**Features**:
+- Base JPA entity classes (AuditableEntity, SoftDeletableEntity)
+- JPA entity listeners and repository utilities
+- CSV parsing capabilities (OpenCSV integration)
+- Safe logging utilities with sensitive data masking
+
+**Dependencies**: Spring Data JPA, Jackson, SLF4J, OpenCSV
+
+### service-web
+**Purpose**: Spring Boot web service components with auto-configuration
+
+**Features**:
+- Standardized exception handling (@RestControllerAdvice)
+- API error response models (ApiErrorResponse)
+- HTTP request/response logging filters
+- Correlation ID support
+- OpenAPI/Swagger base configuration
+
+**Dependencies**: service-core (transitive), Spring Boot Starter Web, Spring Boot Starter Actuator, SpringDoc OpenAPI
+
+**Note**: service-web includes service-core transitively, so most microservices only need to depend on service-web.
 
 ## Purpose
 
@@ -33,7 +51,25 @@ Service Common promotes code reuse and consistency across microservices by:
 
 ## Usage
 
-This library is published to Maven Local and consumed by other Budget Analyzer services.
+These libraries are published to Maven Local and consumed by other Budget Analyzer services.
+
+### Which Module Should I Use?
+
+**Most microservices should use `service-web`** (which transitively includes `service-core`):
+
+```kotlin
+dependencies {
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+}
+```
+
+**Use `service-core` alone** only if you need minimal dependencies without Spring Web features:
+
+```kotlin
+dependencies {
+    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+}
+```
 
 ### Adding as a Dependency
 
@@ -41,7 +77,8 @@ In your service's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("org.budgetanalyzer:service-common:0.0.1-SNAPSHOT")
+    // Recommended: Use service-web (includes service-core transitively)
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 
 repositories {
@@ -50,15 +87,32 @@ repositories {
 }
 ```
 
+### Spring Component Scanning
+
+Enable auto-configuration by including the service-common packages in your component scan:
+
+```java
+@SpringBootApplication(scanBasePackages = {
+    "org.budgetanalyzer.yourservice",  // Your service
+    "org.budgetanalyzer.service"       // service-web (exception handlers, filters)
+})
+```
+
+**Note**: If you only use service-core, no component scanning is required (it contains only utilities and base classes).
+
 ### Building and Publishing
 
 ```bash
-# Build the library
-./gradlew build
+# Build all modules
+./gradlew clean build
 
-# Publish to Maven Local
+# Publish both modules to Maven Local
 ./gradlew publishToMavenLocal
 ```
+
+This publishes both artifacts:
+- `org.budgetanalyzer:service-core:0.0.1-SNAPSHOT`
+- `org.budgetanalyzer:service-web:0.0.1-SNAPSHOT`
 
 ## Development
 
@@ -94,11 +148,27 @@ This project enforces code quality through:
 
 ```
 service-common/
-├── src/
-│   ├── main/java/         # Shared Java code
-│   └── test/java/         # Unit tests
-├── build.gradle.kts       # Build configuration
-└── config/                # Checkstyle configuration
+├── service-core/                    # Core utilities module
+│   ├── src/main/java/
+│   │   └── org/budgetanalyzer/core/
+│   │       ├── domain/              # Base JPA entities
+│   │       ├── repository/          # Repository utilities
+│   │       ├── csv/                 # CSV parsing
+│   │       └── logging/             # Safe logging
+│   ├── src/test/java/
+│   └── build.gradle.kts
+├── service-web/                     # Spring Boot web module
+│   ├── src/main/java/
+│   │   └── org/budgetanalyzer/service/
+│   │       ├── exception/           # Exception hierarchy
+│   │       ├── api/                 # Error response models
+│   │       ├── http/                # HTTP filters/logging
+│   │       └── config/              # OpenAPI config
+│   ├── src/test/java/
+│   └── build.gradle.kts
+├── build.gradle.kts                 # Root build configuration
+├── settings.gradle.kts              # Multi-module setup
+└── config/                          # Checkstyle configuration
 ```
 
 ## Related Repositories

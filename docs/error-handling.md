@@ -2,7 +2,9 @@
 
 ## Overview
 
-All Budget Analyzer microservices use a standardized error response format provided by the service-common library.
+All Budget Analyzer microservices use a standardized error response format provided by the **service-web** module.
+
+**Module**: service-web (from service-common multi-module project)
 
 ## Standard Error Response Format
 
@@ -157,11 +159,13 @@ public ExchangeRate getExchangeRate(String currencyPair) {
 
 ## Global Exception Handler
 
-Service-common provides `DefaultApiExceptionHandler` - a `@RestControllerAdvice` that automatically converts all exceptions to standardized `ApiErrorResponse` format.
+The **service-web** module provides `DefaultApiExceptionHandler` - a `@RestControllerAdvice` that automatically converts all exceptions to standardized `ApiErrorResponse` format.
+
+**Location**: `service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java`
 
 ### How It Works
 
-1. **Include service-common dependency** in your microservice
+1. **Include service-web dependency** in your microservice (`org.budgetanalyzer:service-web`)
 2. **Enable component scanning** for `org.budgetanalyzer.service` package
 3. **Throw exceptions** from your controllers/services
 4. **Handler automatically converts** to `ApiErrorResponse`

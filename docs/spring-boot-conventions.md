@@ -138,13 +138,17 @@ public class TransactionService { }
 
 ## Base Entity Classes
 
-**From service-common library**:
+**Module**: service-core
+
+**From the service-core module** (in `org.budgetanalyzer.core.domain`):
 
 ### AuditableEntity
 Provides automatic timestamp tracking:
 - `createdAt` - Timestamp when entity was created (immutable)
 - `updatedAt` - Timestamp when entity was last modified (auto-updated)
 - Managed by JPA lifecycle callbacks
+
+**Location**: `service-core/src/main/java/org/budgetanalyzer/core/domain/AuditableEntity.java`
 
 **Usage**:
 ```java
@@ -163,6 +167,8 @@ Extends `AuditableEntity` with soft-delete support:
 - `SoftDeleteListener` intercepts deletions
 - Sets `deleted=true` instead of removing from database
 
+**Location**: `service-core/src/main/java/org/budgetanalyzer/core/domain/SoftDeletableEntity.java`
+
 **Usage**:
 ```java
 @Entity
@@ -179,6 +185,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     // Automatically gets findByIdActive(), findAllActive()
 }
 ```
+
+**Note**: `SoftDeleteOperations` interface is also in service-core (`org.budgetanalyzer.core.repository`).
 
 ## Persistence Layer: Pure JPA
 
@@ -203,9 +211,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
 ## Exception Handling
 
+**Module**: service-web
+
 **Pattern**: Centralized exception handling with `@ControllerAdvice`
 
-### Exception Hierarchy (from service-common)
+### Exception Hierarchy (from service-web)
+
+**Location**: `service-web/src/main/java/org/budgetanalyzer/service/exception/`
 
 **Base Exceptions**:
 - `ServiceException` - Base for all service exceptions (500)

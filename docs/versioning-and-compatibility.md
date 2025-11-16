@@ -2,15 +2,23 @@
 
 ## Core Principle
 
-**CRITICAL**: ALL changes to service-common MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade service-common.
+**CRITICAL**: ALL changes to **service-core** and **service-web** MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries.
+
+## Multi-Module Versioning
+
+**service-core** and **service-web** are versioned **together as a coordinated pair**:
+- Both modules share the same version number (e.g., `0.0.1-SNAPSHOT`)
+- Both modules are released together in lockstep
+- Changes to either module trigger a version bump for both
+- Consuming services upgrade both modules simultaneously
 
 ## Why Backwards Compatibility Matters
 
 ### The Lockstep Upgrade Strategy
 
-Budget Analyzer uses a **lockstep upgrade strategy** for service-common:
-- When service-common is updated, ALL consuming services are upgraded together
-- All services stay on the same service-common version
+Budget Analyzer uses a **lockstep upgrade strategy** for service-core and service-web:
+- When service-core or service-web is updated, ALL consuming services are upgraded together
+- All services stay on the same version of both modules
 - Integration issues are caught immediately during the coordinated upgrade
 - No version fragmentation across the microservice ecosystem
 
@@ -18,7 +26,7 @@ Budget Analyzer uses a **lockstep upgrade strategy** for service-common:
 
 Breaking changes undermine the lockstep strategy by:
 - **Forcing staggered upgrades**: Services must upgrade one-by-one instead of together
-- **Version fragmentation**: Services end up on different service-common versions
+- **Version fragmentation**: Services end up on different versions of the libraries
 - **Missed compatibility issues**: Integration problems surface weeks/months later
 - **Deployment coordination nightmares**: Complex rollout sequences, rollback challenges
 - **Technical debt accumulation**: Temporary workarounds become permanent
@@ -151,7 +159,9 @@ public class CategorizedBusinessException extends BusinessException {
 
 ## Semantic Versioning
 
-service-common follows [Semantic Versioning 2.0.0](https://semver.org/):
+**service-core** and **service-web** follow [Semantic Versioning 2.0.0](https://semver.org/):
+
+**Important**: Both modules share the same version number and are always released together.
 
 **Version format: MAJOR.MINOR.PATCH** (e.g., 1.4.2)
 

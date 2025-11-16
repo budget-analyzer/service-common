@@ -1,106 +1,116 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 plugins {
-    java
-    checkstyle
-    alias(libs.plugins.spring.boot) apply false
-    alias(libs.plugins.spring.dependency.management)
-    alias(libs.plugins.spotless)
-    id("maven-publish")
+    id("com.diffplug.spotless") version "8.0.0" apply false
 }
 
-group = "org.budgetanalyzer"
-version = "0.0.1-SNAPSHOT"
+allprojects {
+    group = "org.budgetanalyzer"
+    version = "0.0.1-SNAPSHOT"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInt())
-    }
-    withSourcesJar()
-    withJavadocJar()
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}")
+    repositories {
+        mavenCentral()
     }
 }
 
-dependencies {
-    implementation(libs.spring.boot.starter.web)
-    implementation(libs.spring.boot.starter.data.jpa)
+subprojects {
+    apply(plugin = "java-library")
+    apply(plugin = "checkstyle")
+    apply(plugin = "maven-publish")
+    apply(plugin = "com.diffplug.spotless")
 
-    implementation(libs.opencsv)
-    implementation(libs.springdoc.openapi)
-
-    testImplementation(libs.spring.boot.starter.test)
-    testRuntimeOnly(libs.junit.platform.launcher)
-    testRuntimeOnly(libs.h2)
-}
-
-spotless {
-    java {
-        googleJavaFormat(libs.versions.googleJavaFormat.get())
-        trimTrailingWhitespace()
-        endWithNewline()
-        importOrder("java", "javax", "jakarta", "org", "com", "", "org.budgetanalyzer")
-        removeUnusedImports()
+    configure<JavaPluginExtension> {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(24))
+        }
+        withSourcesJar()
+        withJavadocJar()
     }
-}
 
-checkstyle {
-    toolVersion = libs.versions.checkstyle.get()
-}
-
-tasks.named("check") {
-    dependsOn("spotlessCheck")
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
-tasks.withType<Javadoc> {
-    options {
-        (this as StandardJavadocDocletOptions).apply {
-            addStringOption("Xdoclint:none", "-quiet")
-            // External API links for generating clickable Javadoc references
-            // Update these URLs when upgrading Spring Boot or Jakarta EE versions
-            links(
-                "https://docs.oracle.com/en/java/javase/24/docs/api/",
-                "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
-                "https://jakarta.ee/specifications/platform/10/apidocs/"
-            )
+    tasks.withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
+            exceptionFormat = TestExceptionFormat.FULL
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
         }
     }
-}
 
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-
-            groupId = project.group.toString()
-            artifactId = "service-common"
-            version = project.version.toString()
-
-            pom {
-                name.set("Service Common")
-                description.set("Shared core module for microservices")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
+    tasks.withType<Javadoc> {
+        options {
+            (this as StandardJavadocDocletOptions).apply {
+                addStringOption("Xdoclint:none", "-quiet")
+                // External API links for generating clickable Javadoc references
+                // Update these URLs when upgrading Spring Boot or Jakarta EE versions
+                links(
+                    "https://docs.oracle.com/en/java/javase/24/docs/api/",
+                    "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
+                    "https://jakarta.ee/specifications/platform/10/apidocs/"
+                )
             }
         }
     }
 
-    repositories {
-        mavenLocal()
+    // Shared spotless configuration
+    configure<SpotlessExtension> {
+        java {
+            googleJavaFormat("1.32.0")
+            trimTrailingWhitespace()
+            endWithNewline()
+            importOrder("java", "javax", "jakarta", "org", "com", "", "org.budgetanalyzer")
+            removeUnusedImports()
+        }
+    }
+
+    // Shared checkstyle configuration
+    configure<CheckstyleExtension> {
+        toolVersion = "12.0.1"
+    }
+
+    tasks.named("check") {
+        dependsOn("spotlessCheck")
+    }
+
+    // Publishing configuration
+    configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(components["java"])
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = project.version.toString()
+
+                // Publish resolved versions for dependencies
+                versionMapping {
+                    allVariants {
+                        fromResolutionResult()
+                    }
+                }
+
+                pom {
+                    name.set(project.name)
+                    description.set(project.description ?: "Shared module for microservices")
+
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+                }
+            }
+        }
+
+        repositories {
+            mavenLocal()
+        }
     }
 }

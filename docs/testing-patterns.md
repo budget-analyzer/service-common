@@ -16,7 +16,11 @@
 ### Unit Tests
 
 **File Pattern**: `*Test.java`
-**Location**: `src/test/java` (mirror of `src/main/java`)
+**Location**:
+- `service-core/src/test/java` (for service-core tests)
+- `service-web/src/test/java` (for service-web tests)
+- `{service-name}/src/test/java` (for individual service tests)
+
 **Framework**: JUnit 5 (Jupiter)
 **Spring Context**: No
 
@@ -42,7 +46,11 @@ class TransactionServiceTest {
 ### Integration Tests
 
 **File Pattern**: `*IntegrationTest.java`
-**Location**: `src/test/java` (mirror of `src/main/java`)
+**Location**:
+- `service-core/src/test/java` (for service-core integration tests)
+- `service-web/src/test/java` (for service-web integration tests)
+- `{service-name}/src/test/java` (for individual service integration tests)
+
 **Framework**: JUnit 5 + Spring Boot Test
 **Spring Context**: Yes
 
@@ -241,11 +249,15 @@ void shouldSaveTransactionWithCorrectTimestamp() {
 
 ### Coverage Tools
 ```bash
-# Run tests with coverage
+# Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport
 
-# View coverage report
-open build/reports/jacoco/test/html/index.html
+# View coverage reports
+# service-core report:
+open service-core/build/reports/jacoco/test/html/index.html
+
+# service-web report:
+open service-web/build/reports/jacoco/test/html/index.html
 ```
 
 ## Testing Best Practices

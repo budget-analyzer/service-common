@@ -8,6 +8,8 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 
 **Purpose**: Automatic code formatting with Google Java Format
 
+**Scope**: Applied to all modules (service-core, service-web, and all consuming services)
+
 **Features**:
 - Google Java Format 1.17.0
 - Automatic import ordering: `java` → `javax` → `jakarta` → `org` → `com` → `org.budgetanalyzer`
@@ -17,20 +19,26 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 
 **Usage**:
 ```bash
-# Format code
+# Format code in all modules
 ./gradlew spotlessApply
 
-# Check formatting without applying
+# Check formatting without applying (all modules)
 ./gradlew spotlessCheck
+
+# Format specific module only
+./gradlew :service-core:spotlessApply
+./gradlew :service-web:spotlessApply
 ```
 
 ## Checkstyle Enforcement
 
 **Purpose**: Static code analysis for style and best practices
 
+**Scope**: Applied to all modules (service-core, service-web)
+
 **Configuration**:
 - Version 12.0.1
-- Custom rules in `config/checkstyle/checkstyle.xml`
+- Custom rules in `config/checkstyle/checkstyle.xml` (shared across all modules)
 - Enforces Hibernate import ban
 - Enforces naming conventions
 - Validates Javadoc completeness
@@ -48,16 +56,18 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 **CRITICAL**: Always use these two commands in sequence:
 
 ```bash
-# 1. Format code (always run first)
+# 1. Format code (always run first - formats all modules)
 ./gradlew spotlessApply
 
-# 2. Build and test (always run second)
+# 2. Build and test (always run second - builds all modules)
 ./gradlew clean build
 ```
 
 The `clean build` command will:
-- Clean previous build artifacts
-- Compile all source code
+- Clean previous build artifacts in all modules
+- Compile all source code (service-core and service-web)
+- Run all tests in all modules
+- Execute Checkstyle validation on all modules
 - Run Spotless checks
 - Run Checkstyle
 - Run all unit and integration tests
