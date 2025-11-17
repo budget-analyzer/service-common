@@ -3,8 +3,6 @@ package org.budgetanalyzer.service.api;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -53,8 +51,6 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  * @see ApiErrorResponse
  * @see ApiErrorType
  */
-@AutoConfiguration
-@ConditionalOnWebApplication
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class DefaultApiExceptionHandler {

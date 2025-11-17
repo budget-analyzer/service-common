@@ -1,2 +1,1 @@
-org.budgetanalyzer.service.http.HttpLoggingConfig
-org.budgetanalyzer.service.api.DefaultApiExceptionHandler
+org.budgetanalyzer.service.config.ServiceWebAutoConfiguration

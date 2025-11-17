@@ -11,12 +11,15 @@ dependencyManagement {
 }
 
 dependencies {
-    // API dependencies (transitive to consumers)
-    api(libs.jackson.databind)
-    api(libs.jackson.datatype.jsr310)
-    api(libs.slf4j.api)
-    api(libs.spring.boot.starter.data.jpa)
-    api(libs.opencsv)
+    // TRANSITIVE (api) - every service gets these
+    api(libs.spring.boot.starter.actuator)
+
+    // NOT TRANSITIVE (implementation) - services opt-in
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.datatype.jsr310)
+    implementation(libs.slf4j.api)
+    implementation(libs.spring.boot.starter.data.jpa)
+    implementation(libs.opencsv)
 
     // Test dependencies
     testImplementation(libs.spring.boot.starter.test)

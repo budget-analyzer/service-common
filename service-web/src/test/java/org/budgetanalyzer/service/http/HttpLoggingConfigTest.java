@@ -10,15 +10,17 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
+import org.budgetanalyzer.service.config.ServiceWebAutoConfiguration;
+
 class HttpLoggingConfigTest {
 
   private final WebApplicationContextRunner webContextRunner =
       new WebApplicationContextRunner()
-          .withConfiguration(AutoConfigurations.of(HttpLoggingConfig.class));
+          .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class));
 
   private final ApplicationContextRunner nonWebContextRunner =
       new ApplicationContextRunner()
-          .withConfiguration(AutoConfigurations.of(HttpLoggingConfig.class));
+          .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class));
 
   @Test
   void shouldRegisterCorrelationIdFilterInWebApplication() {

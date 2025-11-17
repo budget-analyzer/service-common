@@ -16,7 +16,8 @@ dependencies {
 
     // Spring Boot (use api() for implicit dependencies)
     api(libs.spring.boot.starter.web)
-    api(libs.spring.boot.starter.actuator)
+    api(libs.spring.boot.starter.data.jpa)
+    // Note: actuator comes from service-core (available to all services)
 
     // Third-party
     api(libs.springdoc.openapi)

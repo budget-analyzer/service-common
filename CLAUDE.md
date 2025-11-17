@@ -23,7 +23,7 @@ Changes here affect all services that depend on these libraries.
 - `csv/` - CSV parsing (CsvParser, CsvData, OpenCsvParser)
 - `logging/` - Safe logging with sensitive data masking
 
-**Dependencies**: Spring Data JPA, Jackson, SLF4J, OpenCSV
+**Dependencies**: Spring Data JPA, Spring Boot Actuator, Jackson, SLF4J, OpenCSV
 
 ### service-web
 **Location**: `service-web/src/main/java/org/budgetanalyzer/service/`
@@ -36,7 +36,9 @@ Changes here affect all services that depend on these libraries.
 - `http/` - HTTP filters (CorrelationIdFilter, HttpLoggingFilter)
 - `config/` - Base OpenAPI configuration
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web, Spring Boot Starter Actuator, SpringDoc OpenAPI
+**Dependencies**: service-core (transitive), Spring Boot Starter Web, SpringDoc OpenAPI
+
+**Note**: Actuator comes from service-core, available to all services (web and non-web)
 
 **Note**: service-web transitively includes service-core, so consuming services typically only need service-web.
 
