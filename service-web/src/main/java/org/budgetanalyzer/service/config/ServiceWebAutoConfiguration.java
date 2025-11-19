@@ -37,7 +37,7 @@ public class ServiceWebAutoConfiguration {
    *
    * <ul>
    *   <li>Servlet exception handler ({@link
-   *       org.budgetanalyzer.service.servlet.api.DefaultApiExceptionHandler})
+   *       org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler})
    *   <li>Servlet HTTP logging filters ({@link
    *       org.budgetanalyzer.service.servlet.http.HttpLoggingConfig})
    * </ul>

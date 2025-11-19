@@ -36,7 +36,7 @@ Changes here affect all services that depend on these libraries.
 - `config/` - Shared configuration (HttpLoggingProperties, ServiceWebAutoConfiguration, BaseOpenApiConfig)
 - `servlet/` - Servlet-specific implementations (Spring MVC)
   - `http/` - HTTP filters (CorrelationIdFilter, HttpLoggingFilter, ContentLoggingUtil, HttpLoggingConfig)
-  - `api/` - Exception handler (DefaultApiExceptionHandler)
+  - `api/` - Exception handler (ServletApiExceptionHandler)
 - `reactive/` - Reactive-specific implementations (Spring WebFlux)
   - `http/` - Reactive filters (ReactiveCorrelationIdFilter, ReactiveHttpLoggingFilter, body caching decorators, ReactiveHttpLoggingConfig)
   - `api/` - Exception handler (ReactiveApiExceptionHandler)
@@ -102,7 +102,7 @@ Components have been reorganized to separate servlet and reactive implementation
 | Old Package | New Package | Type |
 |-------------|-------------|------|
 | `org.budgetanalyzer.service.http.*` | `org.budgetanalyzer.service.servlet.http.*` | Servlet |
-| `org.budgetanalyzer.service.api.DefaultApiExceptionHandler` | `org.budgetanalyzer.service.servlet.api.DefaultApiExceptionHandler` | Servlet |
+| `org.budgetanalyzer.service.api.ServletApiExceptionHandler` | `org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler` | Servlet |
 | N/A | `org.budgetanalyzer.service.reactive.http.*` | Reactive (NEW) |
 | N/A | `org.budgetanalyzer.service.reactive.api.*` | Reactive (NEW) |
 | `org.budgetanalyzer.service.http.HttpLoggingProperties` | `org.budgetanalyzer.service.config.HttpLoggingProperties` | Shared |
@@ -160,7 +160,7 @@ grep -r "@MappedSuperclass" service-core/src/
 - `InvalidRequestException` → 400 (bad input data)
 - `BusinessException` → 422 (business rule violation)
 - `ServiceException` → 500 (internal service error)
-- All exceptions auto-converted to `ApiErrorResponse` by `DefaultApiExceptionHandler`
+- All exceptions auto-converted to `ApiErrorResponse` by `ServletApiExceptionHandler`
 
 **For complete error handling patterns, read [docs/error-handling.md](docs/error-handling.md) when implementing error flows.**
 
@@ -170,7 +170,7 @@ grep -r "@MappedSuperclass" service-core/src/
 grep -r "extends.*Exception" service-web/src/ | grep -v "Test"
 
 # View exception handler
-cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiExceptionHandler.java
 ```
 
 ## Testing Patterns
@@ -342,7 +342,7 @@ grep -r "@Component" service-core/src/main/java/
 
 **For Servlet Applications** (Spring MVC):
 - Activates when `@ConditionalOnWebApplication(type = SERVLET)`
-- **DefaultApiExceptionHandler** - Global exception handling with `@RestControllerAdvice`
+- **ServletApiExceptionHandler** - Global exception handling with `@RestControllerAdvice`
   - Converts all exceptions to standardized `ApiErrorResponse` format
   - Handles: `InvalidRequestException` (400), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, generic exceptions
   - Priority: `@Order(LOWEST_PRECEDENCE)` - services can override
@@ -421,7 +421,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoCo
 cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
 
 # View global exception handler
-cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiExceptionHandler.java
 
 # View HTTP filters
 cat service-web/src/main/java/org/budgetanalyzer/service/http/HttpLoggingConfig.java

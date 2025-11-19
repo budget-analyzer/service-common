@@ -13,7 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.security.test.TestSecurityConfig;
-import org.budgetanalyzer.service.servlet.api.DefaultApiExceptionHandler;
+import org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler;
 import org.budgetanalyzer.service.servlet.http.CorrelationIdFilter;
 import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
 
@@ -24,10 +24,11 @@ import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
  * service-common is consumed by a Spring Boot application.
  */
 @SpringBootTest(
-    classes = {TestApplication.class, TestSecurityConfig.class},
+    classes = {ServletTestApplication.class, TestSecurityConfig.class},
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "AUTH0_AUDIENCE=https://test-api.example.com"
+      "AUTH0_AUDIENCE=https://test-api.example.com",
+      "spring.main.web-application-type=servlet"
     })
 @DisplayName("Service Common Auto-Configuration Integration Tests")
 class ServiceCommonAutoConfigurationIntegrationTest {
@@ -35,9 +36,9 @@ class ServiceCommonAutoConfigurationIntegrationTest {
   @Autowired private ApplicationContext context;
 
   @Test
-  @DisplayName("Should auto-configure DefaultApiExceptionHandler bean")
+  @DisplayName("Should auto-configure ServletApiExceptionHandler bean")
   void shouldAutoConfigureExceptionHandler() {
-    assertThat(context.getBean(DefaultApiExceptionHandler.class)).isNotNull();
+    assertThat(context.getBean(ServletApiExceptionHandler.class)).isNotNull();
   }
 
   @Test
@@ -95,12 +96,13 @@ class ServiceCommonAutoConfigurationIntegrationTest {
    * <p>When budgetanalyzer.service.http-logging.enabled=false, HttpLoggingFilter should not be
    * created.
    */
-  @SpringBootTest(classes = {TestApplication.class, TestSecurityConfig.class})
+  @SpringBootTest(classes = {ServletTestApplication.class, TestSecurityConfig.class})
   @TestPropertySource(
       properties = {
         "budgetanalyzer.service.http-logging.enabled=false",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-        "AUTH0_AUDIENCE=https://test-api.example.com"
+        "AUTH0_AUDIENCE=https://test-api.example.com",
+        "spring.main.web-application-type=servlet"
       })
   @DisplayName("HTTP Logging Disabled Tests")
   static class HttpLoggingDisabledIntegrationTest {

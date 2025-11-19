@@ -3,9 +3,6 @@ package org.budgetanalyzer.service.servlet.api;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -62,12 +59,10 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  */
 @Component
 @RestControllerAdvice
-@ConditionalOnWebApplication(type = Type.SERVLET)
-@ConditionalOnClass(WebRequest.class)
 @Order(Ordered.LOWEST_PRECEDENCE)
-public class DefaultApiExceptionHandler implements ApiExceptionHandler {
+public class ServletApiExceptionHandler implements ApiExceptionHandler {
 
-  private static final Logger log = LoggerFactory.getLogger(DefaultApiExceptionHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(ServletApiExceptionHandler.class);
 
   /**
    * Handles {@link InvalidRequestException} and returns HTTP 400 Bad Request.

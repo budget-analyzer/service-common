@@ -3,9 +3,6 @@ package org.budgetanalyzer.service.reactive.api;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -53,8 +50,6 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  */
 @Component
 @RestControllerAdvice
-@ConditionalOnWebApplication(type = Type.REACTIVE)
-@ConditionalOnClass(Mono.class)
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
 

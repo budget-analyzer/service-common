@@ -26,7 +26,7 @@ import org.budgetanalyzer.service.security.test.TestSecurityConfig;
  * ApiErrorResponse
  */
 @SpringBootTest(
-    classes = {TestApplication.class, TestSecurityConfig.class},
+    classes = {ServletTestApplication.class, TestSecurityConfig.class},
     webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",

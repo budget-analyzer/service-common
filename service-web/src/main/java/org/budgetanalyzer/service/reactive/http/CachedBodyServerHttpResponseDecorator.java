@@ -43,7 +43,10 @@ public class CachedBodyServerHttpResponseDecorator extends ServerHttpResponseDec
                     var bytesToRead =
                         Math.min(dataBuffer.readableByteCount(), maxSize - cachedBody.length());
                     byte[] bytes = new byte[bytesToRead];
-                    dataBuffer.slice(0, bytesToRead).read(bytes);
+                    // Save current position, read bytes, then restore position
+                    var savedPosition = dataBuffer.readPosition();
+                    dataBuffer.read(bytes, 0, bytesToRead);
+                    dataBuffer.readPosition(savedPosition);
                     cachedBody.append(new String(bytes, StandardCharsets.UTF_8));
                   }
                 }));

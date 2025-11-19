@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * </ul>
  *
  * @see ApiErrorResponse
- * @see DefaultApiExceptionHandler
+ * @see org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler
  */
 @Schema(description = "Error type categorization for API responses")
 public enum ApiErrorType {

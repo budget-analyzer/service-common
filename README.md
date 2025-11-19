@@ -139,7 +139,7 @@ cat service-core/src/main/java/org/budgetanalyzer/core/config/ServiceCoreAutoCon
 cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoConfiguration.java
 
 # View global exception handler
-cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/servlet/api/ServletApiExceptionHandler.java
 
 # View security configuration
 cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java

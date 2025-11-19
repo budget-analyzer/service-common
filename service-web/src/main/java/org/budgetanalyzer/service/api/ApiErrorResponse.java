@@ -46,7 +46,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *
  * @see ApiErrorType
  * @see FieldError
- * @see DefaultApiExceptionHandler
+ * @see org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler
  */
 @Schema(description = "Standard API error response format")
 public class ApiErrorResponse {

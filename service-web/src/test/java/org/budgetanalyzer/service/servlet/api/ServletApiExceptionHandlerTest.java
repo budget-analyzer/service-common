@@ -23,16 +23,16 @@ import org.budgetanalyzer.service.exception.ResourceNotFoundException;
 import org.budgetanalyzer.service.exception.ServiceException;
 import org.budgetanalyzer.service.exception.ServiceUnavailableException;
 
-/** Unit tests for {@link DefaultApiExceptionHandler}. */
-@DisplayName("DefaultApiExceptionHandler Tests")
-class DefaultApiExceptionHandlerTest {
+/** Unit tests for {@link ServletApiExceptionHandler}. */
+@DisplayName("ServletApiExceptionHandler Tests")
+class ServletApiExceptionHandlerTest {
 
-  private DefaultApiExceptionHandler handler;
+  private ServletApiExceptionHandler handler;
   private WebRequest webRequest;
 
   @BeforeEach
   void setUp() {
-    handler = new DefaultApiExceptionHandler();
+    handler = new ServletApiExceptionHandler();
     // WebRequest is not used in the handler implementation, so we can pass null
     webRequest = null;
   }

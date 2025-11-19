@@ -28,10 +28,11 @@ import org.budgetanalyzer.service.security.test.TestSecurityConfig;
  */
 @Disabled("Filter integration tests disabled in library - tested in consuming services")
 @SpringBootTest(
-    classes = {TestApplication.class, TestSecurityConfig.class},
+    classes = {ServletTestApplication.class, TestSecurityConfig.class},
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "AUTH0_AUDIENCE=https://test-api.example.com"
+      "AUTH0_AUDIENCE=https://test-api.example.com",
+      "spring.main.web-application-type=servlet"
     })
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("HTTP Logging Integration Tests")
