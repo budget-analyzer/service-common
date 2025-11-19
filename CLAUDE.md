@@ -223,15 +223,164 @@ dependencies {
 }
 ```
 
-**Enable component scanning** (only needed for service-web):
+**Spring Boot Autoconfiguration**: Both modules automatically register their components via Spring Boot's autoconfiguration mechanism. **No manual component scanning or @ComponentScan is required** - exception handling, security, filters, and all other components are automatically available.
+
+**Optional**: If your service uses non-standard package structure (not `@SpringBootApplication` in root package), you may need explicit component scanning:
 ```java
 @SpringBootApplication(scanBasePackages = {
-    "org.budgetanalyzer.yourservice",  // Your service
-    "org.budgetanalyzer.service"       // service-web (exception handlers, filters, config)
+    "org.budgetanalyzer.yourservice"  // Your service packages
 })
 ```
+Note: This is for **your service's components only** - service-common components are already autoconfigured.
 
-**Note**: If you only use service-core, no component scanning is needed (it contains only utilities and base classes).
+## Autoconfiguration
+
+**Pattern**: Both modules use Spring Boot autoconfiguration mechanism - consuming services get most functionality automatically without manual configuration or component scanning.
+
+**Discovery**:
+```bash
+# View autoconfiguration files
+cat service-core/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+cat service-web/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+
+# See what's registered
+grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
+```
+
+### service-core: Automatic Configuration
+
+**Registered via**: `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
+
+#### What You Get Automatically
+
+**ServiceCoreAutoConfiguration** - Activated when service-core is on classpath:
+- **JPA Entity Scanning** (`@EntityScan`) - Automatically scans `org.budgetanalyzer.core.domain` for base entities (AuditableEntity, SoftDeletableEntity)
+  - Conditional: Only when `DataSource` exists
+- **JPA Auditing** (`@EnableJpaAuditing`) - Enables automatic timestamps on entities extending AuditableEntity
+  - Conditional: Only when `DataSource` exists
+- **OpenCsvParser Bean** - CSV parser component automatically available for injection
+
+#### What Requires Manual Use
+
+These are utilities (not Spring beans) - instantiate manually when needed:
+- `SafeLogger` - Static utility for safe logging with sensitive data masking
+- `SensitiveDataModule` - Jackson module for `@Sensitive` annotation
+- Base entity classes (`AuditableEntity`, `SoftDeletableEntity`) - Extend in your entities
+- `SoftDeleteOperations` - Repository utility interface
+
+**Discovery**:
+```bash
+# View ServiceCoreAutoConfiguration
+cat service-core/src/main/java/org/budgetanalyzer/core/config/ServiceCoreAutoConfiguration.java
+
+# Find all @Component beans in service-core
+grep -r "@Component" service-core/src/main/java/
+```
+
+### service-web: Automatic Configuration
+
+**Registered via**: `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
+
+#### What You Get Automatically
+
+**1. Global Exception Handling** (`DefaultApiExceptionHandler`):
+- `@RestControllerAdvice` automatically registered
+- Converts all exceptions to standardized `ApiErrorResponse` format
+- Handles: `InvalidRequestException` (400), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, and generic exceptions
+- Priority: `@Order(LOWEST_PRECEDENCE)` - services can override with custom handlers
+
+**2. OAuth2 JWT Security** (`OAuth2ResourceServerSecurityConfig`):
+- `SecurityFilterChain` automatically configured with OAuth2 JWT validation
+- Public endpoints: `/actuator/health/**`
+- Protected: All other endpoints (requires valid JWT)
+- `JwtDecoder` bean (conditional - only if not already defined)
+- `JwtAuthenticationConverter` extracts authorities from JWT 'scope' claim
+
+**Requires configuration**:
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI}  # Auth0 tenant URL
+
+# Environment variable (defaults to https://api.budgetanalyzer.org)
+AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+```
+
+**3. HTTP Filters** (`HttpLoggingConfig`):
+- `CorrelationIdFilter` - **Always enabled** - Adds correlation ID to all requests (MDC + response header)
+- `HttpLoggingFilter` - **Opt-in** - Logs HTTP requests/responses with configurable options
+
+**Enable HTTP logging** (optional):
+```yaml
+budgetanalyzer:
+  service:
+    http-logging:
+      enabled: true
+      include-query-string: true
+      include-client-info: true
+      include-headers: true
+      include-payload: true
+      max-payload-length: 10000
+```
+
+**4. OpenAPI Base Configuration** (`BaseOpenApiConfig`):
+- Abstract base class for service-specific OpenAPI configuration
+- Automatically provides: Standard error response schemas (400/404/500/503), `ApiErrorResponse` and `FieldError` schemas
+- **Requires manual setup**: Service must extend `BaseOpenApiConfig` and add:
+  ```java
+  @Configuration
+  @OpenApiDefinition(
+      info = @Info(
+          title = "Your Service API",
+          version = "1.0.0",
+          description = "API description"
+      )
+  )
+  public class OpenApiConfig extends BaseOpenApiConfig {}
+  ```
+
+#### What Requires Manual Use
+
+These are utilities (not Spring beans) or exception classes for throwing:
+- **SecurityContextUtil** - Static utility for extracting JWT user info
+- **ContentLoggingUtil** - Utility for HTTP content logging
+- **Exception classes** - Throw these in your code: `ResourceNotFoundException`, `InvalidRequestException`, `BusinessException`, `ServiceException`, `ClientException`, `ServiceUnavailableException`
+- **API response models** - DTOs for error responses: `ApiErrorResponse`, `ApiErrorType`, `FieldError`
+- **Test utilities** - `TestSecurityConfig`, `JwtTestBuilder` (for tests)
+
+**Discovery**:
+```bash
+# View all autoconfiguration classes
+cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoConfiguration.java
+cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
+
+# View global exception handler
+cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+
+# View HTTP filters
+cat service-web/src/main/java/org/budgetanalyzer/service/http/HttpLoggingConfig.java
+
+# Find all @Configuration classes
+grep -r "@Configuration" service-web/src/main/java/
+```
+
+### Summary: Action Required by Consuming Services
+
+**service-core** (fully automatic):
+- ✅ Nothing - works automatically when on classpath
+- ✅ Base entities, auditing, CSV parser all autoconfigured
+
+**service-web** (mostly automatic):
+- ✅ Exception handling - automatic
+- ✅ Security - automatic (requires OAuth2 properties in config)
+- ✅ Correlation ID filter - automatic
+- ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`
+- ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`
+
+**IMPORTANT**: Component scanning of `org.budgetanalyzer.service` is **NOT required** for autoconfiguration. The Spring Boot autoconfiguration mechanism handles everything automatically via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
 ## Architectural Principles
 

@@ -90,18 +90,65 @@ repositories {
 }
 ```
 
-### Spring Component Scanning
+### What You Get Automatically
 
-Enable auto-configuration by including the service-common packages in your component scan:
+Both modules use **Spring Boot autoconfiguration** - all components are automatically registered when the libraries are on your classpath. **No manual configuration or component scanning required!**
 
-```java
-@SpringBootApplication(scanBasePackages = {
-    "org.budgetanalyzer.yourservice",  // Your service
-    "org.budgetanalyzer.service"       // service-web (exception handlers, filters)
-})
+#### service-core (Fully Automatic)
+When service-core is on your classpath, you automatically get:
+- **JPA Entity Scanning** - Base entities (AuditableEntity, SoftDeletableEntity) automatically discovered
+- **JPA Auditing** - Automatic timestamps (createdAt, updatedAt) on entities
+- **CSV Parser Bean** - OpenCsvParser available for injection
+
+#### service-web (Mostly Automatic)
+When service-web is on your classpath, you automatically get:
+- **Global Exception Handler** - All exceptions converted to standardized ApiErrorResponse format
+  - Maps: 400 (Bad Request), 404 (Not Found), 422 (Business Logic), 500 (Server Error)
+- **OAuth2 JWT Security** - Automatic JWT validation with Auth0
+  - Requires: `spring.security.oauth2.resourceserver.jwt.issuer-uri` configuration
+- **Correlation ID Filter** - Automatically adds correlation IDs to all requests
+- **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
+- **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
+
+**Example configuration** (application.yml):
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI}
+
+budgetanalyzer:
+  service:
+    http-logging:
+      enabled: true  # Optional: enable HTTP request/response logging
 ```
 
-**Note**: If you only use service-core, no component scanning is required (it contains only utilities and base classes).
+**No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+
+#### Discovering What's Autoconfigured
+
+```bash
+# View autoconfiguration registration files
+cat service-core/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+cat service-web/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+
+# View autoconfiguration classes
+cat service-core/src/main/java/org/budgetanalyzer/core/config/ServiceCoreAutoConfiguration.java
+cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoConfiguration.java
+
+# View global exception handler
+cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+
+# View security configuration
+cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
+
+# Find all @Configuration classes
+grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
+```
+
+For complete details, see the [Autoconfiguration section in CLAUDE.md](CLAUDE.md#autoconfiguration).
 
 ### Building and Publishing
 
