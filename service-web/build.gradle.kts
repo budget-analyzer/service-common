@@ -14,20 +14,29 @@ dependencies {
     // Core module dependency (transitive to consumers via api())
     api(project(":service-core"))
 
-    // Spring Boot (use api() for implicit dependencies)
-    api(libs.spring.boot.starter.web)
-    api(libs.spring.boot.starter.data.jpa)
-    api(libs.spring.boot.starter.oauth2.resource.server)
-    // Note: actuator comes from service-core (available to all services)
+    // Common dependencies - transitive
+    api(libs.commons.lang3)
+    api(libs.spring.boot.starter.validation)
 
-    // Third-party
-    api(libs.springdoc.openapi)
-    implementation(libs.commons.lang3)
+    // Stack-specific - compile-only (NOT transitive)
+    // Services must explicitly add the stack they need
+    compileOnly(libs.spring.boot.starter.web)
+    compileOnly(libs.spring.boot.starter.webflux)
+    compileOnly(libs.spring.boot.starter.data.jpa)
+    compileOnly(libs.spring.boot.starter.oauth2.resource.server)
+
+    // SpringDoc - compile-only (services choose servlet or reactive version)
+    compileOnly(libs.springdoc.openapi)
 
     // Test support (published for consuming services' tests)
     api(libs.mockito.core) // Used by security.test package
 
-    // Test
+    // Test - need both stacks for testing
+    testImplementation(libs.spring.boot.starter.web)
+    testImplementation(libs.spring.boot.starter.webflux)
+    testImplementation(libs.spring.boot.starter.data.jpa)
+    testImplementation(libs.spring.boot.starter.oauth2.resource.server)
+    testImplementation(libs.springdoc.openapi)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.test)
     testRuntimeOnly(libs.junit.platform.launcher)

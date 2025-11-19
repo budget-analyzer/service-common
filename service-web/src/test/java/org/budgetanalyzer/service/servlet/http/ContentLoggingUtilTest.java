@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,6 +22,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 @ExtendWith(MockitoExtension.class)
 class ContentLoggingUtilTest {
@@ -85,9 +87,9 @@ class ContentLoggingUtilTest {
     // Assert
     @SuppressWarnings("unchecked")
     var headers = (Map<String, String>) details.get("headers");
-    assertEquals("********", headers.get("Authorization"));
+    assertEquals("***MASKED***", headers.get("Authorization"));
     assertEquals("application/json", headers.get("Content-Type"));
-    assertEquals("********", headers.get("X-API-Key"));
+    assertEquals("***MASKED***", headers.get("X-API-Key"));
   }
 
   @Test
@@ -133,7 +135,7 @@ class ContentLoggingUtilTest {
     // Assert
     @SuppressWarnings("unchecked")
     var headers = (Map<String, String>) details.get("headers");
-    assertEquals("********", headers.get("Set-Cookie"));
+    assertEquals("***MASKED***", headers.get("Set-Cookie"));
     assertEquals("application/json", headers.get("Content-Type"));
   }
 

@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.config.ServiceWebAutoConfiguration;
 
 class HttpLoggingConfigTest {

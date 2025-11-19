@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

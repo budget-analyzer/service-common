@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for HTTP request/response logging.
+ *
+ * <p>Shared configuration for both servlet and reactive HTTP logging filters.
  *
  * <p>Usage in application.yml:
  *

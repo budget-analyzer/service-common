@@ -3,6 +3,7 @@ package org.budgetanalyzer.service.integration;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,11 +27,13 @@ import org.budgetanalyzer.service.security.test.TestSecurityConfig;
  */
 @SpringBootTest(
     classes = {TestApplication.class, TestSecurityConfig.class},
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "AUTH0_AUDIENCE=https://test-api.example.com"
+      "AUTH0_AUDIENCE=https://test-api.example.com",
+      "spring.main.web-application-type=servlet"
     })
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @DisplayName("Exception Handling Integration Tests")
 class ExceptionHandlingIntegrationIntegrationTest {
 
@@ -40,7 +43,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
   @DisplayName("Should return 404 with ApiErrorResponse for ResourceNotFoundException")
   void shouldReturn404ForResourceNotFound() throws Exception {
     mockMvc
-        .perform(get("/api/test/not-found"))
+        .perform(get("/api/test/not-found").with(jwt()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.type").value("NOT_FOUND"))
         .andExpect(jsonPath("$.message").value("Test resource not found"));
@@ -50,7 +53,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
   @DisplayName("Should return 422 with ApiErrorResponse for BusinessException")
   void shouldReturn422ForBusinessException() throws Exception {
     mockMvc
-        .perform(get("/api/test/business-error"))
+        .perform(get("/api/test/business-error").with(jwt()))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(jsonPath("$.type").value("APPLICATION_ERROR"))
         .andExpect(jsonPath("$.message").value("Business rule violation"))
@@ -61,7 +64,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
   @DisplayName("Should return 400 with ApiErrorResponse for InvalidRequestException")
   void shouldReturn400ForInvalidRequest() throws Exception {
     mockMvc
-        .perform(get("/api/test/invalid-request"))
+        .perform(get("/api/test/invalid-request").with(jwt()))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
         .andExpect(jsonPath("$.message").value("Invalid request parameters"));
@@ -71,17 +74,17 @@ class ExceptionHandlingIntegrationIntegrationTest {
   @DisplayName("Should return 500 with ApiErrorResponse for ServiceException")
   void shouldReturn500ForServiceException() throws Exception {
     mockMvc
-        .perform(get("/api/test/service-error"))
+        .perform(get("/api/test/service-error").with(jwt()))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"))
-        .andExpect(jsonPath("$.message").value("Internal service error"));
+        .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
   }
 
   @Test
   @DisplayName("Should return 503 with ApiErrorResponse for ServiceUnavailableException")
   void shouldReturn503ForServiceUnavailable() throws Exception {
     mockMvc
-        .perform(get("/api/test/service-unavailable"))
+        .perform(get("/api/test/service-unavailable").with(jwt()))
         .andExpect(status().isServiceUnavailable())
         .andExpect(jsonPath("$.type").value("SERVICE_UNAVAILABLE"))
         .andExpect(jsonPath("$.message").value("Service temporarily unavailable"));
@@ -91,10 +94,10 @@ class ExceptionHandlingIntegrationIntegrationTest {
   @DisplayName("Should return 500 with ApiErrorResponse for unexpected RuntimeException")
   void shouldReturn500ForUnexpectedRuntimeException() throws Exception {
     mockMvc
-        .perform(get("/api/test/runtime-error"))
+        .perform(get("/api/test/runtime-error").with(jwt()))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"))
-        .andExpect(jsonPath("$.message").value("Unexpected runtime error"));
+        .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
   }
 
   @Test
@@ -106,7 +109,8 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(
             post("/api/test/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidRequest))
+                .content(invalidRequest)
+                .with(jwt()))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.type").value("VALIDATION_ERROR"))
         .andExpect(jsonPath("$.message").value(containsString("Validation failed")))
@@ -129,7 +133,8 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(
             post("/api/test/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(validRequest))
+                .content(validRequest)
+                .with(jwt()))
         .andExpect(status().isOk());
   }
 
@@ -139,7 +144,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
     var correlationId = "test-correlation-id-12345";
 
     mockMvc
-        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId))
+        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId).with(jwt()))
         .andExpect(status().isNotFound());
   }
 }

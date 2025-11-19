@@ -9,12 +9,12 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
-import org.budgetanalyzer.service.api.DefaultApiExceptionHandler;
-import org.budgetanalyzer.service.http.CorrelationIdFilter;
-import org.budgetanalyzer.service.http.HttpLoggingConfig;
-import org.budgetanalyzer.service.http.HttpLoggingFilter;
-import org.budgetanalyzer.service.http.HttpLoggingProperties;
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.security.test.TestSecurityConfig;
+import org.budgetanalyzer.service.servlet.api.DefaultApiExceptionHandler;
+import org.budgetanalyzer.service.servlet.http.CorrelationIdFilter;
+import org.budgetanalyzer.service.servlet.http.HttpLoggingConfig;
+import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
 
 /**
  * Integration test verifying component scanning works correctly.

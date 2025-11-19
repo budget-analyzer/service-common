@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import java.io.IOException;
 
@@ -16,6 +16,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /**
  * Filter that logs HTTP request and response details for debugging and audit purposes.

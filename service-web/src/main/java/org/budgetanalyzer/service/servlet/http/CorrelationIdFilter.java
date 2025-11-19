@@ -1,7 +1,6 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,7 +11,10 @@ import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import org.budgetanalyzer.core.logging.CorrelationIdGenerator;
 
 /**
  * Filter that generates or extracts a correlation ID for each HTTP request.
@@ -23,6 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *
  * <p>Order: -100 (runs early in filter chain, before logging filter)
  */
+@Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 100)
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
@@ -31,9 +34,6 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
   /** Key for storing correlation ID in MDC (Mapped Diagnostic Context). */
   public static final String CORRELATION_ID_MDC_KEY = "correlationId";
-
-  /** Prefix for generated correlation IDs (format: req_<16-hex-chars>). */
-  private static final String CORRELATION_ID_PREFIX = "req_";
 
   /**
    * Processes the request by extracting or generating a correlation ID and storing it in MDC.
@@ -86,21 +86,9 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     var correlationId = request.getHeader(CORRELATION_ID_HEADER);
 
     if (correlationId == null || correlationId.trim().isEmpty()) {
-      correlationId = generateCorrelationId();
+      correlationId = CorrelationIdGenerator.generate();
     }
 
     return correlationId;
-  }
-
-  /**
-   * Generates a new correlation ID.
-   *
-   * <p>Format: req_<16-hex-chars>
-   *
-   * @return Generated correlation ID
-   */
-  private String generateCorrelationId() {
-    var uuid = UUID.randomUUID().toString().replace("-", "");
-    return CORRELATION_ID_PREFIX + uuid.substring(0, 16);
   }
 }

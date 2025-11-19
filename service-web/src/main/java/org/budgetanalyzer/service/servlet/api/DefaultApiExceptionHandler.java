@@ -1,11 +1,15 @@
-package org.budgetanalyzer.service.api;
+package org.budgetanalyzer.service.servlet.api;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +20,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import org.budgetanalyzer.service.api.ApiErrorResponse;
+import org.budgetanalyzer.service.api.ApiErrorType;
+import org.budgetanalyzer.service.api.ApiExceptionHandler;
+import org.budgetanalyzer.service.api.FieldError;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -23,8 +31,9 @@ import org.budgetanalyzer.service.exception.ResourceNotFoundException;
 import org.budgetanalyzer.service.exception.ServiceUnavailableException;
 
 /**
- * Global exception handler that converts exceptions to standardized {@link ApiErrorResponse}
- * objects.
+ * Global exception handler for servlet-based (Spring MVC) applications.
+ *
+ * <p>Converts exceptions to standardized {@link ApiErrorResponse} objects.
  *
  * <p>This handler operates with {@link Ordered#LOWEST_PRECEDENCE}, meaning any service-specific
  * {@code @RestControllerAdvice} beans will take precedence and can override the default handling.
@@ -47,15 +56,16 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *
  * <p>All exceptions are logged with WARN level, including root cause information when available.
  *
- * <p>This handler is auto-configured and will be automatically discovered by Spring Boot component
- * scanning when the service-common library is included as a dependency.
- *
  * @see ApiErrorResponse
  * @see ApiErrorType
+ * @see ApiExceptionHandler
  */
+@Component
 @RestControllerAdvice
+@ConditionalOnWebApplication(type = Type.SERVLET)
+@ConditionalOnClass(WebRequest.class)
 @Order(Ordered.LOWEST_PRECEDENCE)
-public class DefaultApiExceptionHandler {
+public class DefaultApiExceptionHandler implements ApiExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultApiExceptionHandler.class);
 
@@ -69,7 +79,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(InvalidRequestException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    return buildInvalidRequestError(exception);
   }
 
   /**
@@ -98,24 +109,14 @@ public class DefaultApiExceptionHandler {
                 })
             .toList();
 
-    var message =
-        "Validation failed for "
-            + fieldErrors.size()
-            + " field"
-            + (fieldErrors.size() != 1 ? "s" : "");
-
     log.warn(
         "Handled exception type: VALIDATION_ERROR exception: {} field count: {} message: {}",
         exception.getClass(),
         fieldErrors.size(),
-        message,
+        "Validation failed for " + fieldErrors.size() + " field(s)",
         exception);
 
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.VALIDATION_ERROR)
-        .message(message)
-        .fieldErrors(fieldErrors)
-        .build();
+    return buildValidationError(fieldErrors);
   }
 
   /**
@@ -128,7 +129,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(ResourceNotFoundException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.NOT_FOUND, exception);
+    logException(ApiErrorType.NOT_FOUND, null, exception);
+    return buildNotFoundError(exception);
   }
 
   /**
@@ -146,7 +148,11 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(NoHandlerFoundException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.NOT_FOUND, exception);
+    logException(ApiErrorType.NOT_FOUND, null, exception);
+    return ApiErrorResponse.builder()
+        .type(ApiErrorType.NOT_FOUND)
+        .message(exception.getMessage())
+        .build();
   }
 
   /**
@@ -161,7 +167,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
+    logException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
+    return buildBusinessError(exception);
   }
 
   /**
@@ -174,7 +181,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ClientException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
+    logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
+    return buildServiceUnavailableError(exception);
   }
 
   /**
@@ -187,7 +195,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ServiceUnavailableException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
+    logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
+    return buildServiceUnavailableError(exception);
   }
 
   /**
@@ -204,7 +213,13 @@ public class DefaultApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(
       MethodArgumentTypeMismatchException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    return buildInvalidRequestError(
+        new InvalidRequestException(
+            "Invalid request parameter: "
+                + exception.getName()
+                + " must be a valid "
+                + exception.getRequiredType().getSimpleName()));
   }
 
   /**
@@ -220,7 +235,8 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(MissingServletRequestPartException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    return buildInvalidRequestError(new InvalidRequestException(exception.getMessage()));
   }
 
   /**
@@ -238,7 +254,8 @@ public class DefaultApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(
       MissingServletRequestParameterException exception, WebRequest request) {
-    return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    return buildInvalidRequestError(new InvalidRequestException(exception.getMessage()));
   }
 
   /**
@@ -255,14 +272,18 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   public ApiErrorResponse handle(Exception exception, WebRequest request) {
-    return handleApiException(ApiErrorType.INTERNAL_ERROR, exception);
+    logException(ApiErrorType.INTERNAL_ERROR, null, exception);
+    return buildInternalError(exception);
   }
 
-  private ApiErrorResponse handleApiException(ApiErrorType type, Throwable throwable) {
-    return handleApiException(type, null, throwable);
-  }
-
-  private ApiErrorResponse handleApiException(ApiErrorType type, String code, Throwable throwable) {
+  /**
+   * Logs exception details with root cause information.
+   *
+   * @param type error type
+   * @param code error code (optional)
+   * @param throwable the exception
+   */
+  private void logException(ApiErrorType type, String code, Throwable throwable) {
     var message = throwable.getMessage();
     var rootCause = ExceptionUtils.getRootCause(throwable);
     if (rootCause != null) {
@@ -283,7 +304,5 @@ public class DefaultApiExceptionHandler {
           message,
           throwable);
     }
-
-    return ApiErrorResponse.builder().type(type).message(message).code(code).build();
   }
 }

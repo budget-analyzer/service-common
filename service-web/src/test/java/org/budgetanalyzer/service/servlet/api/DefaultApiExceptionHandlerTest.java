@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.api;
+package org.budgetanalyzer.service.servlet.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,6 +15,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import org.budgetanalyzer.service.api.ApiErrorType;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -184,7 +185,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Unexpected error occurred", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
     assertNull(response.getCode());
   }
 
@@ -197,7 +198,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Runtime error", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 
   @Test
@@ -209,7 +210,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("IO error occurred", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 
   @Test
@@ -221,7 +222,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Service error", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 
   @Test
@@ -322,7 +323,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Null value encountered", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 
   @Test
@@ -334,7 +335,7 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Invalid argument provided", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 
   @Test
@@ -346,6 +347,6 @@ class DefaultApiExceptionHandlerTest {
 
     assertNotNull(response);
     assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Invalid state", response.getMessage());
+    assertEquals("An unexpected error occurred", response.getMessage());
   }
 }
