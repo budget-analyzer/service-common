@@ -25,7 +25,7 @@ dependencies {
     implementation(libs.commons.lang3)
 
     // Test support (published for consuming services' tests)
-    api("org.mockito:mockito-core") // Used by security.test package
+    api(libs.mockito.core) // Used by security.test package
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
