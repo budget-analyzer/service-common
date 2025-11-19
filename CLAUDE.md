@@ -187,7 +187,7 @@ find service-web/src/main/java -name "*.java"
 ### Publish to Maven Local
 ```bash
 # Build and publish both modules
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 ./gradlew clean build
 ./gradlew publishToMavenLocal
 ```
@@ -282,7 +282,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 **Build commands**:
 ```bash
 # Always run these two commands in sequence
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 ./gradlew clean build
 ```
 
@@ -348,7 +348,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 **Maintain backwards compatibility** - All service-common changes must work with existing consuming services (lockstep upgrade strategy)
 **Always run build commands**:
    ```bash
-   ./gradlew spotlessApply
+   ./gradlew clean spotlessApply
    ./gradlew clean build
    ```
 **Fix Checkstyle warnings** - Treat warnings as errors requiring immediate resolution

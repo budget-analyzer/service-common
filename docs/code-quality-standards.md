@@ -20,7 +20,7 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 **Usage**:
 ```bash
 # Format code in all modules
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 
 # Check formatting without applying (all modules)
 ./gradlew spotlessCheck
@@ -57,7 +57,7 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 
 ```bash
 # 1. Format code (always run first - formats all modules)
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 
 # 2. Build and test (always run second - builds all modules)
 ./gradlew clean build
@@ -362,7 +362,7 @@ Please advise on how to proceed.
 
 Before committing code, verify:
 
-- [ ] `./gradlew spotlessApply` has been run
+- [ ] `./gradlew clean spotlessApply` has been run
 - [ ] `./gradlew clean build` passes without errors
 - [ ] No Checkstyle warnings in build output
 - [ ] All public methods have Javadoc
@@ -424,7 +424,7 @@ Failures in any of these steps should block merge/deployment.
 ### Spotless Failures
 ```bash
 # Fix formatting violations
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 ```
 
 ### Checkstyle Failures

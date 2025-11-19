@@ -137,7 +137,7 @@ This publishes both artifacts:
 ./gradlew spotlessCheck
 
 # Apply code formatting
-./gradlew spotlessApply
+./gradlew clean spotlessApply
 ```
 
 ## Code Quality
