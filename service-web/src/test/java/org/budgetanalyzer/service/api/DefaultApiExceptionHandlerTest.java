@@ -13,6 +13,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
@@ -59,6 +60,20 @@ class DefaultApiExceptionHandlerTest {
     assertNotNull(response);
     assertEquals(ApiErrorType.NOT_FOUND, response.getType());
     assertEquals("Transaction not found with id: 123", response.getMessage());
+    assertNull(response.getCode());
+    assertNull(response.getFieldErrors());
+  }
+
+  @Test
+  @DisplayName("Should handle NoHandlerFoundException with NOT_FOUND type")
+  void shouldHandleNoHandlerFoundException() {
+    var exception = new NoHandlerFoundException("GET", "/api/nonexistent", null);
+
+    var response = handler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.NOT_FOUND, response.getType());
+    assertNotNull(response.getMessage());
     assertNull(response.getCode());
     assertNull(response.getFieldErrors());
   }

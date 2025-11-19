@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
@@ -35,6 +36,7 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  * <ul>
  *   <li>{@link InvalidRequestException} → 400 Bad Request
  *   <li>{@link ResourceNotFoundException} → 404 Not Found
+ *   <li>{@link NoHandlerFoundException} → 404 Not Found
  *   <li>{@link BusinessException} → 422 Unprocessable Entity (includes error code)
  *   <li>{@link ClientException} → 503 Service Unavailable
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
@@ -126,6 +128,24 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(ResourceNotFoundException exception, WebRequest request) {
+    return handleApiException(ApiErrorType.NOT_FOUND, exception);
+  }
+
+  /**
+   * Handles {@link NoHandlerFoundException} and returns HTTP 404 Not Found.
+   *
+   * <p>This exception is thrown when a request is made to an endpoint that has no mapped handler.
+   * To enable this exception, Spring MVC must be configured with {@code
+   * spring.mvc.throw-exception-if-no-handler-found=true} and {@code
+   * spring.web.resources.add-mappings=false}.
+   *
+   * @param exception the exception thrown when no handler is found for the request
+   * @param request the web request context
+   * @return standardized error response with NOT_FOUND type
+   */
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  public ApiErrorResponse handle(NoHandlerFoundException exception, WebRequest request) {
     return handleApiException(ApiErrorType.NOT_FOUND, exception);
   }
 
