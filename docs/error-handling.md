@@ -159,9 +159,9 @@ public ExchangeRate getExchangeRate(String currencyPair) {
 
 ## Global Exception Handler
 
-The **service-web** module provides `DefaultApiExceptionHandler` - a `@RestControllerAdvice` that automatically converts all exceptions to standardized `ApiErrorResponse` format.
+The **service-web** module provides `ServletApiExceptionHandler` - a `@RestControllerAdvice` that automatically converts all exceptions to standardized `ApiErrorResponse` format.
 
-**Location**: `service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java`
+**Location**: `service-web/src/main/java/org/budgetanalyzer/service/servlet/api/ServletApiExceptionHandler.java`
 
 ### How It Works
 

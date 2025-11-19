@@ -259,7 +259,7 @@ public class TransactionService {
 ```
 
 ### Global Exception Handler
-Service-common provides `DefaultApiExceptionHandler` that automatically converts exceptions to standardized API error responses. Just include the library - component scanning will auto-discover it.
+Service-common provides `ServletApiExceptionHandler` that automatically converts exceptions to standardized API error responses. Just include the library - autoconfiguration will auto-discover it.
 
 ## Dependency Injection
 

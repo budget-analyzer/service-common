@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.reactive.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,14 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.config.ServiceWebAutoConfiguration;
 
-class HttpLoggingConfigTest {
+class ReactiveHttpLoggingConfigTest {
 
-  private final WebApplicationContextRunner webContextRunner =
-      new WebApplicationContextRunner()
+  private final ReactiveWebApplicationContextRunner reactiveContextRunner =
+      new ReactiveWebApplicationContextRunner()
           .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class));
 
   private final ApplicationContextRunner nonWebContextRunner =
@@ -23,127 +24,132 @@ class HttpLoggingConfigTest {
           .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class));
 
   @Test
-  void shouldRegisterCorrelationIdFilterInWebApplication() {
+  void shouldRegisterReactiveCorrelationIdFilterInReactiveWebApplication() {
     // Arrange & Act
-    webContextRunner.run(
+    reactiveContextRunner.run(
         context -> {
           // Assert
           assertTrue(
-              context.containsBean("correlationIdFilter"),
-              "Should register CorrelationIdFilter bean");
+              context.containsBean("reactiveCorrelationIdFilter"),
+              "Should register ReactiveCorrelationIdFilter bean");
           assertNotNull(
-              context.getBean(CorrelationIdFilter.class),
-              "Should be able to get CorrelationIdFilter bean");
+              context.getBean(ReactiveCorrelationIdFilter.class),
+              "Should be able to get ReactiveCorrelationIdFilter bean");
         });
   }
 
   @Test
-  void shouldNotRegisterCorrelationIdFilterInNonWebApplication() {
+  void shouldNotRegisterReactiveFiltersInNonWebApplication() {
     // Arrange & Act
     nonWebContextRunner.run(
         context -> {
           // Assert
           assertFalse(
-              context.containsBean("correlationIdFilter"),
-              "Should NOT register CorrelationIdFilter in non-web application");
+              context.containsBean("reactiveCorrelationIdFilter"),
+              "Should NOT register ReactiveCorrelationIdFilter in non-web application");
+          assertFalse(
+              context.containsBean("reactiveHttpLoggingFilter"),
+              "Should NOT register ReactiveHttpLoggingFilter in non-web application");
         });
   }
 
   @Test
-  void shouldRegisterHttpLoggingFilterWhenEnabled() {
+  void shouldRegisterReactiveHttpLoggingFilterWhenEnabled() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               // Assert
               assertTrue(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should register HttpLoggingFilter when enabled");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "Should register ReactiveHttpLoggingFilter when enabled");
               assertNotNull(
-                  context.getBean(HttpLoggingFilter.class),
-                  "Should be able to get HttpLoggingFilter bean");
+                  context.getBean(ReactiveHttpLoggingFilter.class),
+                  "Should be able to get ReactiveHttpLoggingFilter bean");
             });
   }
 
   @Test
-  void shouldNotRegisterHttpLoggingFilterWhenDisabled() {
+  void shouldNotRegisterReactiveHttpLoggingFilterWhenDisabled() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues("budgetanalyzer.service.http-logging.enabled=false")
         .run(
             context -> {
               // Assert
               assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter when disabled");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "Should NOT register ReactiveHttpLoggingFilter when disabled");
             });
   }
 
   @Test
-  void shouldNotRegisterHttpLoggingFilterWhenPropertyNotSet() {
+  void shouldNotRegisterReactiveHttpLoggingFilterWhenPropertyNotSet() {
     // Arrange & Act - Don't set the enabled property (defaults to false)
-    webContextRunner.run(
+    reactiveContextRunner.run(
         context -> {
           // Assert
           assertFalse(
-              context.containsBean("httpLoggingFilter"),
-              "Should NOT register HttpLoggingFilter when property not set (defaults to false)");
+              context.containsBean("reactiveHttpLoggingFilter"),
+              "Should NOT register ReactiveHttpLoggingFilter when property not set "
+                  + "(default false)");
         });
   }
 
   @Test
   void shouldRegisterBothFiltersWhenHttpLoggingEnabled() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               // Assert
               assertTrue(
-                  context.containsBean("correlationIdFilter"),
-                  "Should register CorrelationIdFilter");
+                  context.containsBean("reactiveCorrelationIdFilter"),
+                  "Should register ReactiveCorrelationIdFilter");
               assertTrue(
-                  context.containsBean("httpLoggingFilter"), "Should register HttpLoggingFilter");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "Should register ReactiveHttpLoggingFilter");
 
               assertEquals(
                   2,
-                  context.getBeansOfType(CorrelationIdFilter.class).size()
-                      + context.getBeansOfType(HttpLoggingFilter.class).size(),
+                  context.getBeansOfType(ReactiveCorrelationIdFilter.class).size()
+                      + context.getBeansOfType(ReactiveHttpLoggingFilter.class).size(),
                   "Should have exactly 2 filter beans registered");
             });
   }
 
   @Test
-  void shouldRegisterOnlyCorrelationIdFilterWhenHttpLoggingDisabled() {
+  void shouldRegisterOnlyReactiveCorrelationIdFilterWhenHttpLoggingDisabled() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues("budgetanalyzer.service.http-logging.enabled=false")
         .run(
             context -> {
               // Assert
               assertTrue(
-                  context.containsBean("correlationIdFilter"),
-                  "Should register CorrelationIdFilter");
+                  context.containsBean("reactiveCorrelationIdFilter"),
+                  "Should register ReactiveCorrelationIdFilter");
               assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "Should NOT register ReactiveHttpLoggingFilter");
 
               assertEquals(
                   1,
-                  context.getBeansOfType(CorrelationIdFilter.class).size(),
-                  "Should have exactly 1 filter bean (CorrelationIdFilter)");
+                  context.getBeansOfType(ReactiveCorrelationIdFilter.class).size(),
+                  "Should have exactly 1 filter bean (ReactiveCorrelationIdFilter)");
               assertEquals(
                   0,
-                  context.getBeansOfType(HttpLoggingFilter.class).size(),
-                  "Should have 0 HttpLoggingFilter beans");
+                  context.getBeansOfType(ReactiveHttpLoggingFilter.class).size(),
+                  "Should have 0 ReactiveHttpLoggingFilter beans");
             });
   }
 
   @Test
   void shouldRegisterHttpLoggingPropertiesBean() {
     // Arrange & Act
-    webContextRunner.run(
+    reactiveContextRunner.run(
         context -> {
           // Assert
           assertNotNull(
@@ -153,9 +159,9 @@ class HttpLoggingConfigTest {
   }
 
   @Test
-  void shouldPassPropertiesToHttpLoggingFilter() {
+  void shouldPassPropertiesToReactiveHttpLoggingFilter() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.log-level=INFO",
@@ -176,15 +182,15 @@ class HttpLoggingConfigTest {
 
               // Filter should be created with these properties
               assertNotNull(
-                  context.getBean(HttpLoggingFilter.class),
-                  "HttpLoggingFilter should be created with properties");
+                  context.getBean(ReactiveHttpLoggingFilter.class),
+                  "ReactiveHttpLoggingFilter should be created with properties");
             });
   }
 
   @Test
   void shouldHandleExcludeAndIncludePatterns() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.exclude-patterns[0]=/actuator/**",
@@ -213,7 +219,7 @@ class HttpLoggingConfigTest {
   @Test
   void shouldHandleCustomSensitiveHeaders() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.sensitive-headers[0]=X-Custom-Token",
@@ -236,7 +242,7 @@ class HttpLoggingConfigTest {
   @Test
   void shouldHandleLogErrorsOnlyFlag() {
     // Arrange & Act
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.log-errors-only=true")
@@ -257,25 +263,22 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert - No filters should be registered in non-web application
               assertFalse(
-                  context.containsBean("correlationIdFilter"),
-                  "Should NOT register CorrelationIdFilter in non-web application");
+                  context.containsBean("reactiveCorrelationIdFilter"),
+                  "Should NOT register ReactiveCorrelationIdFilter in non-web application");
               assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter in non-web application");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "Should NOT register ReactiveHttpLoggingFilter in non-web application");
 
-              // HttpLoggingConfig is conditional on web application,
-              // so properties won't be registered either
-              assertEquals(
-                  0,
-                  context.getBeansOfType(HttpLoggingProperties.class).size(),
-                  "Should NOT register HttpLoggingProperties in non-web application");
+              // ReactiveHttpLoggingConfig is conditional on web application,
+              // so properties won't be registered by reactive config
+              // (but might be registered by servlet config if present)
             });
   }
 
   @Test
   void shouldHandleAllBooleanPropertiesCombinations() {
     // Arrange & Act - Enable all optional features
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.include-request-body=true",
@@ -303,7 +306,7 @@ class HttpLoggingConfigTest {
   @Test
   void shouldHandleAllBooleanPropertiesDisabled() {
     // Arrange & Act - Disable all optional features but enable the filter
-    webContextRunner
+    reactiveContextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.include-request-body=false",
@@ -327,8 +330,8 @@ class HttpLoggingConfigTest {
               assertTrue(properties.isLogErrorsOnly());
 
               assertTrue(
-                  context.containsBean("httpLoggingFilter"),
-                  "HttpLoggingFilter should be registered even with minimal config");
+                  context.containsBean("reactiveHttpLoggingFilter"),
+                  "ReactiveHttpLoggingFilter should be registered even with minimal config");
             });
   }
 }

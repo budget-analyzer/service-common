@@ -9,12 +9,12 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
-import org.budgetanalyzer.service.api.DefaultApiExceptionHandler;
-import org.budgetanalyzer.service.http.CorrelationIdFilter;
-import org.budgetanalyzer.service.http.HttpLoggingConfig;
-import org.budgetanalyzer.service.http.HttpLoggingFilter;
-import org.budgetanalyzer.service.http.HttpLoggingProperties;
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.security.test.TestSecurityConfig;
+import org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler;
+import org.budgetanalyzer.service.servlet.http.CorrelationIdFilter;
+import org.budgetanalyzer.service.servlet.http.HttpLoggingConfig;
+import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
 
 /**
  * Integration test verifying component scanning works correctly.
@@ -23,14 +23,15 @@ import org.budgetanalyzer.service.security.test.TestSecurityConfig;
  * auto-configuration and component scanning with scanBasePackages = {"org.budgetanalyzer.service"}.
  */
 @SpringBootTest(
-    classes = TestApplication.class,
+    classes = ServletTestApplication.class,
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "AUTH0_AUDIENCE=https://test-api.example.com"
+      "AUTH0_AUDIENCE=https://test-api.example.com",
+      "spring.main.web-application-type=servlet"
     })
 @ImportAutoConfiguration({
   HttpLoggingConfig.class,
-  DefaultApiExceptionHandler.class,
+  ServletApiExceptionHandler.class,
   TestSecurityConfig.class
 })
 @DisplayName("Component Scanning Integration Tests")
@@ -42,16 +43,16 @@ class ComponentScanningIntegrationTest {
   @DisplayName("Should discover all service-common beans via component scanning")
   void shouldDiscoverAllServiceCommonBeans() {
     // Verify all expected beans are registered by type (bean names may vary)
-    assertThat(context.getBeansOfType(DefaultApiExceptionHandler.class)).hasSize(1);
+    assertThat(context.getBeansOfType(ServletApiExceptionHandler.class)).hasSize(1);
     assertThat(context.getBeansOfType(CorrelationIdFilter.class)).hasSize(1);
     assertThat(context.getBeansOfType(HttpLoggingFilter.class)).hasSize(1);
     assertThat(context.getBeansOfType(HttpLoggingProperties.class)).hasSize(1);
   }
 
   @Test
-  @DisplayName("Should be able to autowire DefaultApiExceptionHandler")
-  void shouldAutowireDefaultApiExceptionHandler() {
-    var handler = context.getBean(DefaultApiExceptionHandler.class);
+  @DisplayName("Should be able to autowire ServletApiExceptionHandler")
+  void shouldAutowireServletApiExceptionHandler() {
+    var handler = context.getBean(ServletApiExceptionHandler.class);
     assertThat(handler).isNotNull();
   }
 
@@ -80,7 +81,7 @@ class ComponentScanningIntegrationTest {
   @DisplayName("Should have correct bean scopes")
   void shouldHaveCorrectBeanScopes() {
     // All service-common beans should be singletons
-    var exceptionHandlerName = context.getBeanNamesForType(DefaultApiExceptionHandler.class)[0];
+    var exceptionHandlerName = context.getBeanNamesForType(ServletApiExceptionHandler.class)[0];
     var correlationIdFilterName = context.getBeanNamesForType(CorrelationIdFilter.class)[0];
     var httpLoggingFilterName = context.getBeanNamesForType(HttpLoggingFilter.class)[0];
 
@@ -93,7 +94,7 @@ class ComponentScanningIntegrationTest {
   @DisplayName("Should not have bean conflicts")
   void shouldNotHaveBeanConflicts() {
     // Verify each bean type has exactly one instance
-    var exceptionHandlers = context.getBeansOfType(DefaultApiExceptionHandler.class);
+    var exceptionHandlers = context.getBeansOfType(ServletApiExceptionHandler.class);
     assertThat(exceptionHandlers).hasSize(1);
 
     var correlationIdFilters = context.getBeansOfType(CorrelationIdFilter.class);
@@ -124,7 +125,7 @@ class ComponentScanningIntegrationTest {
   @DisplayName("Should register beans from both service and core packages")
   void shouldRegisterBeansFromBothPackages() {
     // Beans from org.budgetanalyzer.service package
-    assertThat(context.getBeansOfType(DefaultApiExceptionHandler.class)).hasSize(1);
+    assertThat(context.getBeansOfType(ServletApiExceptionHandler.class)).hasSize(1);
 
     // Test repositories from org.budgetanalyzer.core package
     // Spring Data JPA repositories don't need @Repository annotation
@@ -148,7 +149,7 @@ class ComponentScanningIntegrationTest {
     assertThat(beanDefinitionNames).isNotEmpty();
 
     // Verify all service-common beans are present (check by type, not name)
-    assertThat(context.getBeansOfType(DefaultApiExceptionHandler.class)).isNotEmpty();
+    assertThat(context.getBeansOfType(ServletApiExceptionHandler.class)).isNotEmpty();
     assertThat(context.getBeansOfType(CorrelationIdFilter.class)).isNotEmpty();
     assertThat(context.getBeansOfType(HttpLoggingFilter.class)).isNotEmpty();
   }

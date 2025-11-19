@@ -1,4 +1,4 @@
-package org.budgetanalyzer.service.http;
+package org.budgetanalyzer.service.servlet.http;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -13,11 +13,11 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import org.budgetanalyzer.core.logging.SafeLogger;
+import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
+import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /** Utility class for formatting and sanitizing HTTP request/response content for logging. */
 public class ContentLoggingUtil {
-
-  private static final String MASKED_VALUE = "********";
 
   /**
    * Extracts request details for logging.
@@ -151,8 +151,8 @@ public class ContentLoggingUtil {
       var headerName = headerNames.nextElement();
       var headerValue = request.getHeader(headerName);
 
-      if (isSensitiveHeader(headerName, sensitiveHeaders)) {
-        headers.put(headerName, MASKED_VALUE);
+      if (SensitiveHeaderMasker.isSensitive(headerName, sensitiveHeaders)) {
+        headers.put(headerName, SensitiveHeaderMasker.mask(headerValue));
       } else {
         headers.put(headerName, headerValue);
       }
@@ -175,25 +175,14 @@ public class ContentLoggingUtil {
     for (String headerName : response.getHeaderNames()) {
       var headerValue = response.getHeader(headerName);
 
-      if (isSensitiveHeader(headerName, sensitiveHeaders)) {
-        headers.put(headerName, MASKED_VALUE);
+      if (SensitiveHeaderMasker.isSensitive(headerName, sensitiveHeaders)) {
+        headers.put(headerName, SensitiveHeaderMasker.mask(headerValue));
       } else {
         headers.put(headerName, headerValue);
       }
     }
 
     return headers;
-  }
-
-  /**
-   * Checks if a header is sensitive (case-insensitive).
-   *
-   * @param headerName The header name
-   * @param sensitiveHeaders List of sensitive header names
-   * @return True if sensitive
-   */
-  private static boolean isSensitiveHeader(String headerName, List<String> sensitiveHeaders) {
-    return sensitiveHeaders.stream().anyMatch(sensitive -> sensitive.equalsIgnoreCase(headerName));
   }
 
   /**

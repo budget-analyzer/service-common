@@ -28,15 +28,22 @@ Changes here affect all services that depend on these libraries.
 ### service-web
 **Location**: `service-web/src/main/java/org/budgetanalyzer/service/`
 
-**Purpose**: Spring Boot web-specific components with auto-configuration
+**Purpose**: Spring Boot web components supporting both servlet and reactive stacks
 
 **Contains**:
-- `exception/` - Exception hierarchy (ResourceNotFoundException, BusinessException, etc.)
-- `api/` - Error response models (ApiErrorResponse, ApiErrorType, FieldError)
-- `http/` - HTTP filters (CorrelationIdFilter, HttpLoggingFilter)
-- `config/` - Base OpenAPI configuration
+- `api/` - Shared error response models (ApiErrorResponse, ApiErrorType, FieldError, ApiExceptionHandler)
+- `exception/` - Exception hierarchy (shared by both stacks: ResourceNotFoundException, BusinessException, etc.)
+- `config/` - Shared configuration (HttpLoggingProperties, ServiceWebAutoConfiguration, BaseOpenApiConfig)
+- `servlet/` - Servlet-specific implementations (Spring MVC)
+  - `http/` - HTTP filters (CorrelationIdFilter, HttpLoggingFilter, ContentLoggingUtil, HttpLoggingConfig)
+  - `api/` - Exception handler (ServletApiExceptionHandler)
+- `reactive/` - Reactive-specific implementations (Spring WebFlux)
+  - `http/` - Reactive filters (ReactiveCorrelationIdFilter, ReactiveHttpLoggingFilter, body caching decorators, ReactiveHttpLoggingConfig)
+  - `api/` - Exception handler (ReactiveApiExceptionHandler)
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web, SpringDoc OpenAPI
+**Dependencies**: service-core (transitive), Spring Boot Starter Web (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
+
+**Note**: service-web now supports BOTH servlet and reactive stacks through conditional autoconfiguration. Consuming services must explicitly declare their web stack dependency (see Breaking Changes section).
 
 **Note**: Actuator comes from service-core, available to all services (web and non-web)
 
@@ -53,6 +60,54 @@ Changes here affect all services that depend on these libraries.
 
 **Most microservices → Use service-web** (includes service-core transitively)
 **Need only base entities/CSV/logging → Use service-core** (minimal dependencies)
+
+## Breaking Changes (Version 0.0.2-SNAPSHOT)
+
+### Dependency Management Change
+
+**BREAKING**: As of version 0.0.2-SNAPSHOT, consuming services must explicitly declare their web stack dependency.
+
+**Before (0.0.1-SNAPSHOT):**
+```kotlin
+dependencies {
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    // spring-boot-starter-web was transitive
+}
+```
+
+**After (0.0.2-SNAPSHOT and later):**
+
+**Servlet services:**
+```kotlin
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")  // NOW REQUIRED
+    implementation("org.budgetanalyzer:service-web:0.0.2-SNAPSHOT")
+}
+```
+
+**Reactive services:**
+```kotlin
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-webflux")  // NOW REQUIRED
+    implementation("org.budgetanalyzer:service-web:0.0.2-SNAPSHOT")
+}
+```
+
+**Why?** This prevents classpath conflicts where reactive services would inherit servlet dependencies (and vice versa).
+
+### Package Reorganization
+
+Components have been reorganized to separate servlet and reactive implementations:
+
+| Old Package | New Package | Type |
+|-------------|-------------|------|
+| `org.budgetanalyzer.service.http.*` | `org.budgetanalyzer.service.servlet.http.*` | Servlet |
+| `org.budgetanalyzer.service.api.ServletApiExceptionHandler` | `org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler` | Servlet |
+| N/A | `org.budgetanalyzer.service.reactive.http.*` | Reactive (NEW) |
+| N/A | `org.budgetanalyzer.service.reactive.api.*` | Reactive (NEW) |
+| `org.budgetanalyzer.service.http.HttpLoggingProperties` | `org.budgetanalyzer.service.config.HttpLoggingProperties` | Shared |
+
+**Impact**: Internal to service-web only. Consuming services don't import these classes directly since they're registered via Spring Boot autoconfiguration.
 
 ## Spring Boot Conventions
 
@@ -105,7 +160,7 @@ grep -r "@MappedSuperclass" service-core/src/
 - `InvalidRequestException` → 400 (bad input data)
 - `BusinessException` → 422 (business rule violation)
 - `ServiceException` → 500 (internal service error)
-- All exceptions auto-converted to `ApiErrorResponse` by `DefaultApiExceptionHandler`
+- All exceptions auto-converted to `ApiErrorResponse` by `ServletApiExceptionHandler`
 
 **For complete error handling patterns, read [docs/error-handling.md](docs/error-handling.md) when implementing error flows.**
 
@@ -115,7 +170,7 @@ grep -r "@MappedSuperclass" service-core/src/
 grep -r "extends.*Exception" service-web/src/ | grep -v "Test"
 
 # View exception handler
-cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiExceptionHandler.java
 ```
 
 ## Testing Patterns
@@ -283,37 +338,36 @@ grep -r "@Component" service-core/src/main/java/
 
 #### What You Get Automatically
 
-**1. Global Exception Handling** (`DefaultApiExceptionHandler`):
-- `@RestControllerAdvice` automatically registered
-- Converts all exceptions to standardized `ApiErrorResponse` format
-- Handles: `InvalidRequestException` (400), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, and generic exceptions
-- Priority: `@Order(LOWEST_PRECEDENCE)` - services can override with custom handlers
+**ServiceWebAutoConfiguration** - Conditionally registers servlet OR reactive components based on classpath:
 
-**2. OAuth2 JWT Security** (`OAuth2ResourceServerSecurityConfig`):
-- `SecurityFilterChain` automatically configured with OAuth2 JWT validation
-- Public endpoints: `/actuator/health/**`
-- Protected: All other endpoints (requires valid JWT)
-- `JwtDecoder` bean (conditional - only if not already defined)
-- `JwtAuthenticationConverter` extracts authorities from JWT 'scope' claim
+**For Servlet Applications** (Spring MVC):
+- Activates when `@ConditionalOnWebApplication(type = SERVLET)`
+- **ServletApiExceptionHandler** - Global exception handling with `@RestControllerAdvice`
+  - Converts all exceptions to standardized `ApiErrorResponse` format
+  - Handles: `InvalidRequestException` (400), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, generic exceptions
+  - Priority: `@Order(LOWEST_PRECEDENCE)` - services can override
+- **CorrelationIdFilter** - Always enabled - Adds correlation ID (MDC + response header)
+- **HttpLoggingFilter** - Opt-in via configuration
+- **HttpLoggingConfig** - Configuration for servlet filters
 
-**Requires configuration**:
-```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${AUTH0_ISSUER_URI}  # Auth0 tenant URL
+**For Reactive Applications** (Spring WebFlux):
+- Activates when `@ConditionalOnWebApplication(type = REACTIVE)`
+- **ReactiveApiExceptionHandler** - Global exception handling with `@ControllerAdvice`
+  - Converts all exceptions to standardized `ApiErrorResponse` format
+  - Handles reactive-specific validation (`WebExchangeBindException`) plus all standard exceptions
+  - Returns `Mono<ResponseEntity<ApiErrorResponse>>`
+- **ReactiveCorrelationIdFilter** - Always enabled - Adds correlation ID (Reactor Context + response header)
+- **ReactiveHttpLoggingFilter** - Opt-in via configuration
+- **ReactiveHttpLoggingConfig** - Configuration for reactive filters
 
-# Environment variable (defaults to https://api.budgetanalyzer.org)
-AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-```
+**Shared Configuration**:
+- **HttpLoggingProperties** - Shared between servlet and reactive
+- **OAuth2ResourceServerSecurityConfig** - JWT security (servlet and reactive compatible)
+  - Public endpoints: `/actuator/health/**`
+  - Protected: All other endpoints (requires valid JWT)
+  - `JwtDecoder` bean (conditional - only if not already defined)
 
-**3. HTTP Filters** (`HttpLoggingConfig`):
-- `CorrelationIdFilter` - **Always enabled** - Adds correlation ID to all requests (MDC + response header)
-- `HttpLoggingFilter` - **Opt-in** - Logs HTTP requests/responses with configurable options
-
-**Enable HTTP logging** (optional):
+**Enable HTTP logging** (optional, works for both stacks):
 ```yaml
 budgetanalyzer:
   service:
@@ -326,18 +380,27 @@ budgetanalyzer:
       max-payload-length: 10000
 ```
 
-**4. OpenAPI Base Configuration** (`BaseOpenApiConfig`):
+**OAuth2 configuration** (required for secured endpoints):
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI}  # Auth0 tenant URL
+
+# Environment variable (defaults to https://api.budgetanalyzer.org)
+AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+```
+
+**OpenAPI Base Configuration** (`BaseOpenApiConfig`):
 - Abstract base class for service-specific OpenAPI configuration
-- Automatically provides: Standard error response schemas (400/404/500/503), `ApiErrorResponse` and `FieldError` schemas
-- **Requires manual setup**: Service must extend `BaseOpenApiConfig` and add:
+- Automatically provides: Standard error response schemas (400/404/500/503)
+- **Requires manual setup**: Service must extend `BaseOpenApiConfig`
   ```java
   @Configuration
   @OpenApiDefinition(
-      info = @Info(
-          title = "Your Service API",
-          version = "1.0.0",
-          description = "API description"
-      )
+      info = @Info(title = "Your Service API", version = "1.0.0")
   )
   public class OpenApiConfig extends BaseOpenApiConfig {}
   ```
@@ -358,7 +421,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoCo
 cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
 
 # View global exception handler
-cat service-web/src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
+cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiExceptionHandler.java
 
 # View HTTP filters
 cat service-web/src/main/java/org/budgetanalyzer/service/http/HttpLoggingConfig.java

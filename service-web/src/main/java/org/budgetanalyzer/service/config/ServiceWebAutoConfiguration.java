@@ -1,33 +1,87 @@
 package org.budgetanalyzer.service.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Auto-configuration for service-web.
+ * Auto-configuration for service-web supporting both servlet and reactive stacks.
  *
- * <p>Only activates when running as a web application (i.e., Spring Boot Web is on classpath).
- *
- * <p>Enables:
+ * <p>Conditionally registers components based on which web stack is on the classpath:
  *
  * <ul>
- *   <li>Global exception handlers ({@link
- *       org.budgetanalyzer.service.api.DefaultApiExceptionHandler})
- *   <li>HTTP request/response logging filters ({@link
- *       org.budgetanalyzer.service.http.HttpLoggingConfig})
- *   <li>OpenAPI configuration ({@link org.budgetanalyzer.service.config.BaseOpenApiConfig})
+ *   <li>Servlet stack (Spring MVC) - registers servlet-specific beans
+ *   <li>Reactive stack (Spring WebFlux) - registers reactive-specific beans
  * </ul>
  *
  * <p>This auto-configuration is automatically discovered by Spring Boot via
  * META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
  */
 @AutoConfiguration
-@ConditionalOnWebApplication
-@ComponentScan(
-    basePackages = {
-      "org.budgetanalyzer.service.api",
-      "org.budgetanalyzer.service.http",
-      "org.budgetanalyzer.service.config"
-    })
-public class ServiceWebAutoConfiguration {}
+public class ServiceWebAutoConfiguration {
+
+  /**
+   * Configuration for servlet-based (Spring MVC) web applications.
+   *
+   * <p>Activates when:
+   *
+   * <ul>
+   *   <li>Application type is SERVLET
+   *   <li>jakarta.servlet.Filter is on classpath
+   * </ul>
+   *
+   * <p>Enables:
+   *
+   * <ul>
+   *   <li>Servlet exception handler ({@link
+   *       org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler})
+   *   <li>Servlet HTTP logging filters ({@link
+   *       org.budgetanalyzer.service.servlet.http.HttpLoggingConfig})
+   * </ul>
+   */
+  @Configuration
+  @ConditionalOnWebApplication(type = Type.SERVLET)
+  @ConditionalOnClass(name = "jakarta.servlet.Filter")
+  @ComponentScan(
+      basePackages = {
+        "org.budgetanalyzer.service.servlet.http",
+        "org.budgetanalyzer.service.servlet.api"
+      })
+  static class ServletWebConfiguration {
+    // Servlet-specific beans registered via component scanning
+  }
+
+  /**
+   * Configuration for reactive (Spring WebFlux) web applications.
+   *
+   * <p>Activates when:
+   *
+   * <ul>
+   *   <li>Application type is REACTIVE
+   *   <li>org.springframework.web.server.WebFilter is on classpath
+   * </ul>
+   *
+   * <p>Enables:
+   *
+   * <ul>
+   *   <li>Reactive exception handler ({@link
+   *       org.budgetanalyzer.service.reactive.api.ReactiveApiExceptionHandler})
+   *   <li>Reactive HTTP logging filters ({@link
+   *       org.budgetanalyzer.service.reactive.http.ReactiveHttpLoggingConfig})
+   * </ul>
+   */
+  @Configuration
+  @ConditionalOnWebApplication(type = Type.REACTIVE)
+  @ConditionalOnClass(name = "org.springframework.web.server.WebFilter")
+  @ComponentScan(
+      basePackages = {
+        "org.budgetanalyzer.service.reactive.http",
+        "org.budgetanalyzer.service.reactive.api"
+      })
+  static class ReactiveWebConfiguration {
+    // Reactive-specific beans registered via component scanning
+  }
+}
