@@ -185,6 +185,311 @@ public class CreateTransactionRequest {
 - Classes requiring inheritance
 - Classes needing mutable state after construction
 
+### OpenAPI Documentation with SpringDoc
+
+**Rule**: ALL request/response DTOs MUST be annotated with SpringDoc OpenAPI annotations for API documentation.
+
+Budget Analyzer uses SpringDoc OpenAPI to generate interactive API documentation. This is fundamental to our design - the `BaseOpenApiConfig` in service-common provides base configuration, but all DTOs require proper annotations.
+
+#### DTO Annotations
+
+**Required imports**:
+```java
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+```
+
+**Request DTO Pattern** (with validation):
+```java
+public record CreateTransactionRequest(
+    @Schema(
+        description = "Transaction description",
+        example = "Coffee at Starbucks",
+        maxLength = 255,
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotBlank
+    @Size(max = 255)
+    String description,
+
+    @Schema(
+        description = "Transaction amount in the account's currency",
+        example = "4.50",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotNull
+    @Positive
+    BigDecimal amount,
+
+    @Schema(
+        description = "Date of the transaction",
+        example = "2024-01-15",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotNull
+    LocalDate date,
+
+    @Schema(
+        description = "Optional category for the transaction",
+        example = "Food & Dining",
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    String category
+) {}
+```
+
+**Response DTO Pattern**:
+```java
+public record TransactionResponse(
+    @Schema(description = "Unique transaction identifier", example = "12345")
+    Long id,
+
+    @Schema(description = "Transaction description", example = "Coffee at Starbucks")
+    String description,
+
+    @Schema(description = "Transaction amount", example = "4.50")
+    BigDecimal amount,
+
+    @Schema(description = "Transaction date", example = "2024-01-15")
+    LocalDate date,
+
+    @Schema(
+        description = "Transaction type",
+        example = "EXPENSE",
+        allowableValues = {"INCOME", "EXPENSE", "TRANSFER"}
+    )
+    String type,
+
+    @Schema(description = "When the record was created", example = "2024-01-15T10:30:00Z")
+    Instant createdAt,
+
+    @Schema(
+        description = "Category name, if assigned",
+        example = "Food & Dining",
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    String category
+) {
+    public static TransactionResponse from(Transaction entity) {
+        return new TransactionResponse(
+            entity.getId(),
+            entity.getDescription(),
+            entity.getAmount(),
+            entity.getDate(),
+            entity.getType().name(),
+            entity.getCreatedAt(),
+            entity.getCategory() != null ? entity.getCategory().getName() : null
+        );
+    }
+}
+```
+
+**Filter/Query DTO Pattern** (all fields optional):
+```java
+public record TransactionFilter(
+    @Schema(description = "Filter by description (partial match)", example = "coffee")
+    String description,
+
+    @Schema(description = "Filter transactions from this date", example = "2024-01-01")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    LocalDate dateFrom,
+
+    @Schema(description = "Filter transactions to this date", example = "2024-01-31")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    LocalDate dateTo,
+
+    @Schema(description = "Minimum transaction amount", example = "10.00")
+    BigDecimal minAmount,
+
+    @Schema(description = "Maximum transaction amount", example = "100.00")
+    BigDecimal maxAmount
+) {}
+```
+
+#### Key @Schema Attributes
+
+| Attribute | Purpose | Example |
+|-----------|---------|---------|
+| `description` | Human-readable field description | `"Transaction amount in USD"` |
+| `example` | Sample value for documentation | `"4.50"` |
+| `requiredMode` | Whether field is required | `REQUIRED`, `NOT_REQUIRED` |
+| `maxLength` | Maximum string length (match validation) | `255` |
+| `defaultValue` | Default value if not provided | `"USD"` |
+| `allowableValues` | Valid enum values | `{"INCOME", "EXPENSE"}` |
+
+#### Enum Documentation
+
+Annotate enums to provide descriptions for each value:
+
+```java
+@Schema(description = "Type of budget analysis error")
+public enum BudgetAnalyzerError {
+    @Schema(description = "The requested resource was not found")
+    NOT_FOUND,
+
+    @Schema(description = "The request data is invalid or malformed")
+    INVALID_REQUEST,
+
+    @Schema(description = "A business rule was violated")
+    BUSINESS_RULE_VIOLATION,
+
+    @Schema(description = "An internal service error occurred")
+    INTERNAL_ERROR
+}
+```
+
+#### Controller Annotations
+
+**Required imports**:
+```java
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+```
+
+**Controller Pattern**:
+```java
+@RestController
+@RequestMapping("/api/v1/transactions")
+@Tag(name = "Transactions", description = "Transaction management operations")
+public class TransactionController {
+
+    @Operation(
+        summary = "Get all transactions",
+        description = "Retrieves all transactions with optional filtering and pagination"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transactions retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = TransactionResponse.class))
+            )
+        )
+    })
+    @GetMapping
+    public List<TransactionResponse> getAll(
+        @Parameter(description = "Filter criteria", example = "coffee")
+        @RequestParam(required = false) String search
+    ) {
+        // implementation
+    }
+
+    @Operation(
+        summary = "Get transaction by ID",
+        description = "Retrieves a single transaction by its unique identifier"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transaction found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TransactionResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Transaction not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(
+                    name = "Not Found",
+                    summary = "Transaction does not exist",
+                    value = """
+                        {
+                          "type": "NOT_FOUND",
+                          "title": "Resource Not Found",
+                          "status": 404,
+                          "detail": "Transaction not found with id: 12345"
+                        }
+                        """
+                )
+            )
+        )
+    })
+    @GetMapping("/{id}")
+    public TransactionResponse getById(
+        @Parameter(description = "Transaction ID", example = "12345")
+        @PathVariable Long id
+    ) {
+        // implementation
+    }
+
+    @Operation(
+        summary = "Create transaction",
+        description = "Creates a new transaction record"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Transaction created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TransactionResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+        )
+    })
+    @PostMapping
+    public ResponseEntity<TransactionResponse> create(
+        @Valid @RequestBody CreateTransactionRequest request
+    ) {
+        // implementation with Location header
+    }
+}
+```
+
+#### Coordination with Validation
+
+**Rule**: SpringDoc annotations must coordinate with Bean Validation annotations:
+
+```java
+// ✅ CORRECT - Annotations are coordinated
+@Schema(
+    description = "Transaction description",
+    maxLength = 255,                           // Matches @Size
+    requiredMode = Schema.RequiredMode.REQUIRED // Matches @NotBlank
+)
+@NotBlank
+@Size(max = 255)
+String description
+
+// ❌ WRONG - Annotations are inconsistent
+@Schema(maxLength = 100)  // Says 100
+@Size(max = 255)          // But validation allows 255
+String description
+```
+
+#### Discovery
+
+```bash
+# Find all @Schema annotations in a service
+grep -r "@Schema" src/main/java/*/api/
+
+# Find controller OpenAPI annotations
+grep -r "@Operation\|@ApiResponse" src/main/java/*/api/
+
+# View complete examples
+cat src/main/java/org/budgetanalyzer/transaction/api/request/TransactionUpdateRequest.java
+cat src/main/java/org/budgetanalyzer/transaction/api/TransactionController.java
+```
+
 ### Entities
 - **Pattern**: Entity name (no suffix)
 - **Package**: `*.domain`
@@ -516,7 +821,9 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 **Quick reference**:
 - All public APIs need Javadoc
 - First sentence of Javadoc must end with period
-- REST endpoints documented with OpenAPI/Swagger
+- **REST endpoints**: See [OpenAPI Documentation with SpringDoc](#openapi-documentation-with-springdoc) section above
+- All request/response DTOs must have `@Schema` annotations
+- All controller endpoints must have `@Operation` and `@ApiResponse` annotations
 - Domain models documented in architecture documentation
 
 ---
