@@ -130,11 +130,155 @@ public class TransactionService { }
   - `*.service.dto` - Service-layer DTOs (internal)
 - **Example**: `CreateTransactionRequest`, `TransactionResponse`, `TransactionDTO`
 
+### Prefer Records for DTOs
+
+**Rule**: Use Java records whenever possible for POJOs, especially request/response DTOs.
+
+**Why records?**
+- **Immutability**: Records are immutable by default - safer for concurrent code
+- **Conciseness**: No boilerplate (constructors, getters, equals, hashCode, toString)
+- **Clarity**: Clearly signals "this is just data"
+- **Validation**: Works well with Bean Validation annotations
+
+```java
+// ✅ CORRECT - Use records for DTOs
+public record CreateTransactionRequest(
+    @NotBlank String description,
+    @NotNull @Positive BigDecimal amount,
+    @NotNull LocalDate date
+) {}
+
+public record TransactionResponse(
+    Long id,
+    String description,
+    BigDecimal amount,
+    LocalDate date,
+    Instant createdAt
+) {
+    public static TransactionResponse from(Transaction entity) {
+        return new TransactionResponse(
+            entity.getId(),
+            entity.getDescription(),
+            entity.getAmount(),
+            entity.getDate(),
+            entity.getCreatedAt()
+        );
+    }
+}
+
+// Service-layer DTOs
+public record EffectivePermissions(
+    Set<String> rolePermissions,
+    List<ResourcePermission> resourcePermissions
+) {}
+
+// ❌ AVOID - Traditional class for simple DTOs
+public class CreateTransactionRequest {
+    private String description;
+    private BigDecimal amount;
+    // ... getters, setters, equals, hashCode, toString
+}
+```
+
+**When NOT to use records**:
+- Entities (need mutability for JPA lifecycle)
+- Classes requiring inheritance
+- Classes needing mutable state after construction
+
 ### Entities
 - **Pattern**: Entity name (no suffix)
 - **Package**: `*.domain`
 - **Annotation**: `@Entity`
 - **Example**: `Transaction`, `Budget`, `Category`
+
+## Service Layer Boundary Rules
+
+**CRITICAL**: Services must NOT import from the API package (`*.api.request` or `*.api.response`).
+
+### Why This Matters
+- **Layer isolation**: Service layer should be independent of HTTP/API concerns
+- **Testability**: Services can be tested without API layer dependencies
+- **Reusability**: Services can be called from multiple interfaces (API, messaging, scheduled tasks)
+- **Clear responsibilities**: Controllers handle HTTP concerns; services handle business logic
+
+### Request DTO Transformation
+
+Controllers must transform API request DTOs before calling services:
+
+```java
+// ✅ CORRECT - Controller transforms request to primitives/entity
+@PostMapping
+public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody RoleRequest request) {
+    var role = roleService.createRole(
+        request.getName(),
+        request.getDescription(),
+        request.getParentRoleId()
+    );
+    return ResponseEntity.created(location).body(RoleResponse.from(role));
+}
+
+// ❌ WRONG - Service accepts API request DTO
+@Service
+public class RoleService {
+    public Role createRole(RoleRequest request) {  // Service imports from api package!
+        // ...
+    }
+}
+
+// ✅ CORRECT - Service accepts primitives or service-layer DTOs
+@Service
+public class RoleService {
+    public Role createRole(String name, String description, String parentRoleId) {
+        var role = new Role();
+        role.setName(name);
+        role.setDescription(description);
+        role.setParentRoleId(parentRoleId);
+        return roleRepository.save(role);
+    }
+}
+```
+
+### Alternative: Service-Layer DTOs
+
+For complex inputs with many parameters, create DTOs in `service/dto/`:
+
+```java
+// In service/dto/
+public record CreateRoleCommand(String name, String description, String parentRoleId) {}
+
+// In controller
+@PostMapping
+public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody RoleRequest request) {
+    var command = new CreateRoleCommand(
+        request.getName(),
+        request.getDescription(),
+        request.getParentRoleId()
+    );
+    var role = roleService.createRole(command);
+    return ResponseEntity.created(location).body(RoleResponse.from(role));
+}
+
+// In service - imports only from service/dto package
+public Role createRole(CreateRoleCommand command) {
+    var role = new Role();
+    role.setName(command.name());
+    // ...
+}
+```
+
+### Forbidden Patterns
+
+```java
+// ❌ Service importing from api.request
+import org.budgetanalyzer.permission.api.request.RoleRequest;
+
+// ❌ Service importing from api.response
+import org.budgetanalyzer.permission.api.response.RoleResponse;
+
+// ❌ Service method signature using API DTOs
+public Role createRole(RoleRequest request) { }
+public RoleResponse getRole(String id) { }
+```
 
 ## Base Entity Classes
 
