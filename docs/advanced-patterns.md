@@ -313,8 +313,8 @@ CREATE TABLE event_publication (
     listener_id VARCHAR(512) NOT NULL,
     event_type VARCHAR(512) NOT NULL,
     serialized_event TEXT NOT NULL,
-    publication_date TIMESTAMP NOT NULL,
-    completion_date TIMESTAMP                -- NULL = pending
+    publication_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    completion_date TIMESTAMP(6) WITH TIME ZONE     -- NULL = pending
 );
 
 CREATE INDEX idx_event_publication_unpublished
@@ -563,8 +563,8 @@ public class ShedLockConfig {
 -- Flyway migration: V2__add_shedlock_table.sql
 CREATE TABLE shedlock (
     name VARCHAR(64) PRIMARY KEY,
-    lock_until TIMESTAMP NOT NULL,
-    locked_at TIMESTAMP NOT NULL,
+    lock_until TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    locked_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     locked_by VARCHAR(255) NOT NULL
 );
 ```
@@ -683,6 +683,30 @@ git commit -m "feat: add exchange rate source column"
 - **JPA validates schema** - Entities must match migrated schema (`ddl-auto: validate`)
 - **Undo migrations** - For documentation; not auto-executed (Flyway free tier)
 
+### Temporal Column Types
+
+**CRITICAL**: Always use `TIMESTAMP(6) WITH TIME ZONE` for all timestamp columns to ensure consistency across all services.
+
+**Standard pattern**:
+```sql
+-- For entities extending AuditableEntity/SoftDeletableEntity
+created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+updated_at TIMESTAMP(6) WITH TIME ZONE,
+deleted_at TIMESTAMP(6) WITH TIME ZONE,
+
+-- For temporal/audit tables (not extending base entities)
+granted_at TIMESTAMP(6) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+revoked_at TIMESTAMP(6) WITH TIME ZONE,
+expires_at TIMESTAMP(6) WITH TIME ZONE,
+```
+
+**Why this pattern?**
+- **Precision (6)**: Microsecond precision for accurate audit trails
+- **WITH TIME ZONE**: Timezone-aware storage prevents issues across time zones
+- **Consistency**: All services use identical types for interoperability
+
+**Note**: Entities extending `AuditableEntity` or `SoftDeletableEntity` should NOT use `DEFAULT CURRENT_TIMESTAMP` since timestamps are set by JPA lifecycle callbacks.
+
 ### Example: Adding New Table
 
 ```sql
@@ -693,7 +717,7 @@ CREATE TABLE currency_conversion_cache (
     to_currency VARCHAR(3) NOT NULL,
     conversion_date DATE NOT NULL,
     rate DECIMAL(19, 8) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_conversion_cache UNIQUE (from_currency, to_currency, conversion_date)
 );
 
