@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
@@ -20,7 +19,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  * <p>Enables:
  *
  * <ul>
- *   <li>Entity scanning for org.budgetanalyzer.core.domain package
  *   <li>JPA auditing for AuditableEntity timestamps and user tracking
  *   <li>AuditorAware bean for createdBy/updatedBy population from SecurityContext
  * </ul>
@@ -30,7 +28,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 @AutoConfiguration(after = DataSourceAutoConfiguration.class)
 @ConditionalOnClass({DataSource.class, JpaRepository.class})
-@EntityScan(basePackages = "org.budgetanalyzer.core.domain")
 @EnableJpaAuditing(auditorAwareRef = "auditorAware")
 public class ServiceCoreJpaAutoConfiguration {
 
