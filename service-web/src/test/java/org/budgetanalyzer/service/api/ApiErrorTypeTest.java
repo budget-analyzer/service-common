@@ -65,11 +65,29 @@ class ApiErrorTypeTest {
   }
 
   @Test
-  @DisplayName("Should have exactly 6 error types")
-  void shouldHaveExactlySixErrorTypes() {
+  @DisplayName("Should have UNAUTHORIZED type")
+  void shouldHaveUnauthorizedType() {
+    var type = ApiErrorType.UNAUTHORIZED;
+
+    assertNotNull(type);
+    assertEquals("UNAUTHORIZED", type.name());
+  }
+
+  @Test
+  @DisplayName("Should have PERMISSION_DENIED type")
+  void shouldHavePermissionDeniedType() {
+    var type = ApiErrorType.PERMISSION_DENIED;
+
+    assertNotNull(type);
+    assertEquals("PERMISSION_DENIED", type.name());
+  }
+
+  @Test
+  @DisplayName("Should have exactly 8 error types")
+  void shouldHaveExactlyEightErrorTypes() {
     var values = ApiErrorType.values();
 
-    assertEquals(6, values.length);
+    assertEquals(8, values.length);
   }
 
   @Test

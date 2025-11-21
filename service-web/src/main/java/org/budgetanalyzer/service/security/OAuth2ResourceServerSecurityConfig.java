@@ -65,6 +65,7 @@ public class OAuth2ResourceServerSecurityConfig {
    *
    * <ul>
    *   <li>Actuator health endpoints: Permit all (for load balancer health checks)
+   *   <li>OpenAPI documentation endpoints: Permit all (for API docs generation)
    *   <li>All other endpoints: Require authentication
    * </ul>
    *
@@ -81,6 +82,17 @@ public class OAuth2ResourceServerSecurityConfig {
                 authorize
                     // Allow actuator health endpoint (for load balancer health checks)
                     .requestMatchers("/actuator/health", "/actuator/health/**")
+                    .permitAll()
+                    // Allow OpenAPI documentation endpoints (for API docs generation)
+                    .requestMatchers(
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml",
+                        "/*/v3/api-docs",
+                        "/*/v3/api-docs/**",
+                        "/*/v3/api-docs.yaml",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html")
                     .permitAll()
                     // All other requests require authentication
                     .anyRequest()
