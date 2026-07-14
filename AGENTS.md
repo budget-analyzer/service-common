@@ -50,6 +50,24 @@ Update the nearest affected documentation in the same work:
 - `README.md` when setup, usage, or repository purpose changes
 - `docs/` when architecture, configuration, APIs, behaviors, or operating procedures change
 
+When creating an implementation or execution plan intended for AI Session
+Handler, follow the [AI Session Handler plan format](../ai-session-handler/docs/plan-format.md),
+use its canonical template, replace every placeholder, and retain the numbered
+`## Phase N: Title` headings.
+
+Run a specific plan through the workspace wrapper with:
+
+```bash
+ai-session-handler run \
+  --plan /workspace/REPOSITORY/docs/plans/PLAN.md \
+  --max-phases 999 \
+  --quiet \
+  --agent-cmd "/workspace/ai-session-handler/.venv/bin/ai-session-handler-codex-high --model MODEL"
+```
+
+Omit `--model MODEL` from the quoted agent command to use the wrapper's
+configured or default model.
+
 Do not leave documentation updates as follow-up work.
 
 ## Documentation Strategy
@@ -464,6 +482,11 @@ budgetanalyzer:
       max-body-size: 10000         # Optional: values <= 0 disable body capture
 ```
 
+`log-level`, `exclude-patterns`, `include-patterns`, `sensitive-headers`,
+`sensitive-query-params`, and `health-check-user-agent-prefixes` are validated
+as non-null when bound. Omit them to use defaults, or configure an empty list
+when no entries are desired; explicit null values fail startup.
+
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
 - Abstract base class for service-specific OpenAPI configuration
 - Automatically provides: Standard error response schemas (400/404/500/503)
@@ -552,7 +575,8 @@ All code must be production-ready. No shortcuts, prototypes, or workarounds.
 **Why**: The cost of abstraction is bounded (one interface, one translation layer). The cost of provider migration without abstraction is unbounded (every table, every service, every log).
 
 ### Standardized Error Responses
-All API errors follow `ApiErrorResponse` format with error types, field-level validation, and error codes.
+All API errors follow `ApiErrorResponse` format with non-null `type` and `message`, field-level
+validation, and error codes.
 
 ### Soft Delete Pattern
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.

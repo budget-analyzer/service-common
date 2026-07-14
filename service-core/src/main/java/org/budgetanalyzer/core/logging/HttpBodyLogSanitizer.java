@@ -59,10 +59,11 @@ public final class HttpBodyLogSanitizer {
    *
    * @param cachedPrefix cached body prefix, already bounded by the caller
    * @param totalBodySize total number of bytes observed in the body
-   * @param contentType Content-Type header value
-   * @param contentEncoding Content-Encoding header value
-   * @param characterEncoding body character encoding
-   * @return sanitized body string or an omission placeholder
+   * @param contentType Content-Type header value; may be null
+   * @param contentEncoding Content-Encoding header value; may be null
+   * @param characterEncoding body character encoding; may be null to use UTF-8
+   * @return sanitized body string, an omission placeholder, or null when no body content is
+   *     available
    */
   public static String prepareBodyForLogging(
       byte[] cachedPrefix,

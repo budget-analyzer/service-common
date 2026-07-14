@@ -49,6 +49,18 @@ class ApiExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("Should resolve ResponseStatusException with null reason using status message")
+  void shouldResolveResponseStatusExceptionWithNullReasonUsingStatusMessage() {
+    var resolvedError =
+        apiExceptionHandler.resolveCommonException(
+            new ResponseStatusException(HttpStatus.BAD_REQUEST));
+
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Bad Request");
+  }
+
+  @Test
   @DisplayName("Should preserve ResponseStatusException headers")
   void shouldPreserveResponseStatusExceptionHeaders() {
     var resolvedError =
@@ -143,6 +155,24 @@ class ApiExceptionHandlerTest {
     assertThat(resolvedError.response().getFieldErrors().get(1).getMessage())
         .isEqualTo("must be positive");
     assertThat(resolvedError.response().getFieldErrors().get(1).getRejectedValue()).isEqualTo(-1);
+  }
+
+  @Test
+  @DisplayName("Should extract field errors with default message when Spring message is null")
+  void shouldExtractFieldErrorsWithDefaultMessageWhenSpringMessageIsNull() {
+    var bindingResult = new BeanPropertyBindingResult(new TestPayload("", -1), "testPayload");
+    bindingResult.addError(
+        new org.springframework.validation.FieldError(
+            "testPayload", "name", "", false, null, null, null));
+
+    var resolvedError = apiExceptionHandler.resolveValidationFailure(bindingResult);
+
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.VALIDATION_ERROR);
+    assertThat(resolvedError.response().getFieldErrors()).isNotNull();
+    assertThat(resolvedError.response().getFieldErrors().get(0).getField()).isEqualTo("name");
+    assertThat(resolvedError.response().getFieldErrors().get(0).getMessage())
+        .isEqualTo("Invalid value");
   }
 
   @Test

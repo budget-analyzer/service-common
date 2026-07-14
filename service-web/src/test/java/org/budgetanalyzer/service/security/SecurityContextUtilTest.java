@@ -27,7 +27,7 @@ class SecurityContextUtilTest {
   @Test
   void getCurrentUserId_shouldReturnUserIdFromAuthentication() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("ROLE_USER")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -47,7 +47,8 @@ class SecurityContextUtilTest {
 
   @Test
   void getCurrentUserId_shouldReturnEmptyForAnonymousUser() {
-    var authentication = new ClaimsHeaderAuthenticationToken("anonymousUser", Set.of(), List.of());
+    var authentication =
+        ClaimsHeaderAuthenticationToken.authenticated("anonymousUser", Set.of(), List.of());
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     var userId = SecurityContextUtil.getCurrentUserId();
@@ -60,7 +61,7 @@ class SecurityContextUtilTest {
   @Test
   void hasRole_shouldReturnTrueWhenUserHasRole() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("ADMIN"), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -70,7 +71,7 @@ class SecurityContextUtilTest {
   @Test
   void hasRole_shouldReturnFalseWhenUserLacksRole() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("ROLE_USER")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -89,7 +90,7 @@ class SecurityContextUtilTest {
   @Test
   void hasAuthority_shouldReturnTrueWhenUserHasAuthority() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
             Set.of("USER"),
             List.of(
@@ -103,7 +104,7 @@ class SecurityContextUtilTest {
   @Test
   void hasAuthority_shouldReturnFalseWhenUserLacksAuthority() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("transactions:read")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -120,7 +121,7 @@ class SecurityContextUtilTest {
   @Test
   void hasAuthority_shouldReturnFalseWhenAuthorityIsNull() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
             Set.of("USER"),
             List.of(new SimpleGrantedAuthority("transactions:read:any")));
@@ -132,7 +133,7 @@ class SecurityContextUtilTest {
   @Test
   void hasAuthority_shouldNotAddRolePrefix() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("ADMIN"), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -145,7 +146,7 @@ class SecurityContextUtilTest {
   @Test
   void logAuthenticationContext_shouldNotThrowWhenAuthenticated() {
     var authentication =
-        new ClaimsHeaderAuthenticationToken(
+        ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
             Set.of("USER"),
             List.of(

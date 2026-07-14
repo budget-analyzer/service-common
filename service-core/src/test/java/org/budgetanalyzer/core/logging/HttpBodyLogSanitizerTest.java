@@ -115,4 +115,13 @@ class HttpBodyLogSanitizerTest {
 
     assertThat(result).isEqualTo("plain-text-body");
   }
+
+  @Test
+  void shouldReturnNullWhenNoBodyContentIsAvailable() {
+    var result =
+        HttpBodyLogSanitizer.prepareBodyForLogging(
+            new byte[0], 0, null, null, StandardCharsets.UTF_8.name());
+
+    assertThat(result).isNull();
+  }
 }

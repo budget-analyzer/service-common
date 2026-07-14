@@ -140,7 +140,7 @@ public class ReactiveClaimsHeaderSecurityConfig {
       authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
-    return new ClaimsHeaderAuthenticationToken(
+    return ClaimsHeaderAuthenticationToken.authenticated(
         validatedClaimsHeaders.userId(),
         new LinkedHashSet<>(validatedClaimsHeaders.roles()),
         authorities);

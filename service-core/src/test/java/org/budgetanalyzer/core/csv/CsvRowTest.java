@@ -1,6 +1,7 @@
 package org.budgetanalyzer.core.csv;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
 
@@ -16,7 +17,7 @@ class CsvRowTest {
   @Test
   void shouldConstructWithLineNumberAndValues() {
     var values = Map.of("Name", "Alice", "Age", "25", "City", "Boston");
-    var csvRow = new CsvRow(5, values);
+    var csvRow = CsvRow.of(5, values);
 
     assertThat(csvRow.lineNumber()).isEqualTo(5);
     assertThat(csvRow.values()).isEqualTo(values);
@@ -25,7 +26,7 @@ class CsvRowTest {
   @Test
   void shouldAccessValuesByHeaderName() {
     var values = Map.of("Date", "2024-01-15", "Amount", "99.99", "Description", "Coffee");
-    var csvRow = new CsvRow(2, values);
+    var csvRow = CsvRow.of(2, values);
 
     assertThat(csvRow.values().get("Date")).isEqualTo("2024-01-15");
     assertThat(csvRow.values().get("Amount")).isEqualTo("99.99");
@@ -35,7 +36,7 @@ class CsvRowTest {
   @Test
   void shouldReturnNullForNonExistentHeader() {
     var values = Map.of("Name", "Bob");
-    var csvRow = new CsvRow(3, values);
+    var csvRow = CsvRow.of(3, values);
 
     assertThat(csvRow.values().get("NonExistentColumn")).isNull();
   }
@@ -43,7 +44,7 @@ class CsvRowTest {
   @Test
   void shouldHandleEmptyValues() {
     var values = Map.<String, String>of();
-    var csvRow = new CsvRow(10, values);
+    var csvRow = CsvRow.of(10, values);
 
     assertThat(csvRow.lineNumber()).isEqualTo(10);
     assertThat(csvRow.values()).isEmpty();
@@ -52,7 +53,7 @@ class CsvRowTest {
   @Test
   void shouldPreserveLineNumber() {
     var values = Map.of("Column", "Value");
-    var csvRow = new CsvRow(42, values);
+    var csvRow = CsvRow.of(42, values);
 
     assertThat(csvRow.lineNumber()).isEqualTo(42);
   }
@@ -66,11 +67,25 @@ class CsvRowTest {
             "Col3", "Value3",
             "Col4", "Value4",
             "Col5", "Value5");
-    var csvRow = new CsvRow(7, values);
+    var csvRow = CsvRow.of(7, values);
 
     assertThat(csvRow.values()).hasSize(5);
     assertThat(csvRow.values().get("Col1")).isEqualTo("Value1");
     assertThat(csvRow.values().get("Col3")).isEqualTo("Value3");
     assertThat(csvRow.values().get("Col5")).isEqualTo("Value5");
+  }
+
+  @Test
+  void shouldRejectNullValuesThroughPreferredFactory() {
+    assertThatThrownBy(() -> CsvRow.of(1, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("values must not be null");
+  }
+
+  @Test
+  void shouldRejectNullValuesThroughCanonicalConstructor() {
+    assertThatThrownBy(() -> new CsvRow(1, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("values must not be null");
   }
 }

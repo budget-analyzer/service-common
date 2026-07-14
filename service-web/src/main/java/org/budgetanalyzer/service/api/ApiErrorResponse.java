@@ -1,6 +1,7 @@
 package org.budgetanalyzer.service.api;
 
 import java.util.List;
+import java.util.Objects;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -34,12 +35,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * }
  * </pre>
  *
- * <p>Use the builder pattern to construct instances:
+ * <p>Use the strict builder entry point to construct instances:
  *
  * <pre>
- * ApiErrorResponse response = ApiErrorResponse.builder()
- *     .type(ApiErrorType.APPLICATION_ERROR)
- *     .message("CSV format not supported")
+ * ApiErrorResponse response = ApiErrorResponse.builder(
+ *         ApiErrorType.APPLICATION_ERROR,
+ *         "CSV format not supported")
  *     .code("CSV_PARSING_ERROR")
  *     .build();
  * </pre>
@@ -114,17 +115,23 @@ public class ApiErrorResponse {
   }
 
   /**
-   * Creates a new builder for constructing ApiErrorResponse instances.
+   * Creates a new builder for constructing ApiErrorResponse instances with required fields.
    *
-   * @return a new builder instance
+   * @param type the required error type
+   * @param message the required error message
+   * @return a new builder instance initialized with required fields
    */
-  public static Builder builder() {
-    return new Builder();
+  public static Builder builder(ApiErrorType type, String message) {
+    return new Builder()
+        .type(Objects.requireNonNull(type, "type must not be null"))
+        .message(Objects.requireNonNull(message, "message must not be null"));
   }
 
   /** Builder class for constructing ApiErrorResponse instances with a fluent API. */
   public static class Builder {
     private final ApiErrorResponse response = new ApiErrorResponse();
+
+    private Builder() {}
 
     /**
      * Sets the error type.
@@ -176,6 +183,8 @@ public class ApiErrorResponse {
      * @return the constructed ApiErrorResponse
      */
     public ApiErrorResponse build() {
+      Objects.requireNonNull(response.type, "type must not be null");
+      Objects.requireNonNull(response.message, "message must not be null");
       return response;
     }
   }

@@ -603,6 +603,43 @@ Before bumping service-common version:
 - [ ] Tests pass across all services with changes
 - [ ] Documentation comprehensively updated
 
+## 0.0.15 Null Contract Enforcement Notes
+
+Version `0.0.15` is a coordinated lockstep release that enforces the Stage 2 null contracts
+introduced in `0.0.14`. It is not backwards compatible with callers that still rely on permissive
+construction of invalid error contracts, authenticated claims tokens, or CSV rows.
+
+Breaking changes:
+
+- `ApiErrorResponse.builder()` has been removed. Use
+  `ApiErrorResponse.builder(ApiErrorType, String)`. The builder also validates required `type` and
+  `message` at `build()` time so setters cannot clear those fields to null.
+- `FieldError.of(...)` is no longer permissive. It enforces non-null `field` and `message`, matching
+  `FieldError.forField(...)` and `FieldError.forIndexedField(...)`. `rejectedValue` remains
+  nullable.
+- `ClaimsHeaderAuthenticationToken` no longer exposes a public constructor. Use
+  `ClaimsHeaderAuthenticationToken.authenticated(userId, roles, authorities)`.
+- `CsvRow` now requires a non-null values map through both `CsvRow.of(...)` and the canonical record
+  constructor.
+
+Migration checklist for consumers:
+
+- Replace any no-argument `ApiErrorResponse.builder()` call with
+  `ApiErrorResponse.builder(type, message)`.
+- Ensure no builder setter later passes null for `type` or `message`.
+- Prefer `FieldError.forField(...)` and `FieldError.forIndexedField(...)`; if `FieldError.of(...)`
+  remains, ensure `field` and `message` are non-null.
+- Replace `new ClaimsHeaderAuthenticationToken(...)` with
+  `ClaimsHeaderAuthenticationToken.authenticated(...)`.
+- Ensure every `new CsvRow(...)` call passes a non-null values map, or use `CsvRow.of(...)`.
+
+Validation search:
+
+```bash
+rg -n "ApiErrorResponse\.builder\(\)|FieldError\.of|new ClaimsHeaderAuthenticationToken|new CsvRow" \
+  src test docs
+```
+
 ## Communication and Coordination
 
 ### When releasing new versions:

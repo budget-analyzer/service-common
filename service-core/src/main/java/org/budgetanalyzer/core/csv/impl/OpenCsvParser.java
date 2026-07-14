@@ -91,7 +91,7 @@ public class OpenCsvParser implements CsvParser {
     for (int i = 0; i < rows.size(); i++) {
       var dataMap = buildDataMap(headers, rows.get(i));
       var lineNumber = i + 2; // the first row is the second line of the file by definition.
-      var csvRow = new CsvRow(lineNumber, dataMap);
+      var csvRow = CsvRow.of(lineNumber, dataMap);
 
       csvRows.add(csvRow);
     }

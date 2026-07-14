@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -16,6 +20,7 @@ class HttpLoggingPropertiesTest {
 
   private final ApplicationContextRunner contextRunner =
       new ApplicationContextRunner().withUserConfiguration(TestConfig.class);
+  private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
   @Test
   void shouldHaveCorrectDefaultValues() {
@@ -79,6 +84,12 @@ class HttpLoggingPropertiesTest {
     assertThat(properties.getSensitiveHeaders().contains("Cookie"))
         .as("Should contain Cookie")
         .isTrue();
+    assertThat(properties.getSensitiveQueryParams())
+        .as("Default sensitiveQueryParams should not be null")
+        .isNotNull();
+    assertThat(properties.getSensitiveQueryParams())
+        .as("Default sensitiveQueryParams should be empty")
+        .isEmpty();
     assertThat(properties.isLogErrorsOnly()).as("Default logErrorsOnly should be false").isFalse();
     assertThat(properties.isSkipHealthCheckAgents())
         .as("Default skipHealthCheckAgents should be true")
@@ -146,6 +157,18 @@ class HttpLoggingPropertiesTest {
   }
 
   @Test
+  void shouldValidateDefaultProperties() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act
+    var violations = validator.validate(properties);
+
+    // Assert
+    assertThat(violations).as("Default properties should pass validation").isEmpty();
+  }
+
+  @Test
   void shouldBindListPropertiesFromConfiguration() {
     // Arrange & Act
     contextRunner
@@ -156,7 +179,11 @@ class HttpLoggingPropertiesTest {
             "budgetanalyzer.service.http-logging.include-patterns[0]=/api/**",
             "budgetanalyzer.service.http-logging.include-patterns[1]=/admin/**",
             "budgetanalyzer.service.http-logging.sensitive-headers[0]=Authorization",
-            "budgetanalyzer.service.http-logging.sensitive-headers[1]=X-Custom-Token")
+            "budgetanalyzer.service.http-logging.sensitive-headers[1]=X-Custom-Token",
+            "budgetanalyzer.service.http-logging.sensitive-query-params[0]=access_token",
+            "budgetanalyzer.service.http-logging.sensitive-query-params[1]=custom_secret",
+            "budgetanalyzer.service.http-logging.health-check-user-agent-prefixes[0]=CustomProbe",
+            "budgetanalyzer.service.http-logging.health-check-user-agent-prefixes[1]=MyProbe")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -194,33 +221,67 @@ class HttpLoggingPropertiesTest {
               assertThat(properties.getSensitiveHeaders().contains("X-Custom-Token"))
                   .as("Should contain X-Custom-Token")
                   .isTrue();
+
+              assertThat(properties.getSensitiveQueryParams())
+                  .as("Should bind sensitive query params")
+                  .containsExactly("access_token", "custom_secret");
+              assertThat(properties.getHealthCheckUserAgentPrefixes())
+                  .as("Should bind health check user agent prefixes")
+                  .containsExactly("CustomProbe", "MyProbe");
             });
   }
 
   @Test
-  void shouldHandleEmptyListProperties() {
+  void shouldBindEmptyListProperties() {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
             "budgetanalyzer.service.http-logging.enabled=true",
             "budgetanalyzer.service.http-logging.exclude-patterns=",
             "budgetanalyzer.service.http-logging.include-patterns=",
-            "budgetanalyzer.service.http-logging.sensitive-headers=")
+            "budgetanalyzer.service.http-logging.sensitive-headers=",
+            "budgetanalyzer.service.http-logging.sensitive-query-params=",
+            "budgetanalyzer.service.http-logging.health-check-user-agent-prefixes=")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
               assertThat(properties.getExcludePatterns())
-                  .as("excludePatterns should not be null")
-                  .isNotNull();
+                  .as("excludePatterns should bind as an empty list")
+                  .isEmpty();
               assertThat(properties.getIncludePatterns())
-                  .as("includePatterns should not be null")
-                  .isNotNull();
+                  .as("includePatterns should bind as an empty list")
+                  .isEmpty();
               assertThat(properties.getSensitiveHeaders())
-                  .as("sensitiveHeaders should not be null")
-                  .isNotNull();
+                  .as("sensitiveHeaders should bind as an empty list")
+                  .isEmpty();
+              assertThat(properties.getSensitiveQueryParams())
+                  .as("sensitiveQueryParams should bind as an empty list")
+                  .isEmpty();
+              assertThat(properties.getHealthCheckUserAgentPrefixes())
+                  .as("healthCheckUserAgentPrefixes should bind as an empty list")
+                  .isEmpty();
+              assertThat(validator.validate(properties))
+                  .as("Empty lists should pass validation")
+                  .isEmpty();
             });
+  }
+
+  @Test
+  void shouldRejectNullRequiredPropertiesViaJakartaValidation() {
+    assertRequiredPropertyViolation("logLevel", properties -> properties.setLogLevel(null));
+    assertRequiredPropertyViolation(
+        "excludePatterns", properties -> properties.setExcludePatterns(null));
+    assertRequiredPropertyViolation(
+        "includePatterns", properties -> properties.setIncludePatterns(null));
+    assertRequiredPropertyViolation(
+        "sensitiveHeaders", properties -> properties.setSensitiveHeaders(null));
+    assertRequiredPropertyViolation(
+        "sensitiveQueryParams", properties -> properties.setSensitiveQueryParams(null));
+    assertRequiredPropertyViolation(
+        "healthCheckUserAgentPrefixes",
+        properties -> properties.setHealthCheckUserAgentPrefixes(null));
   }
 
   @Test
@@ -399,6 +460,9 @@ class HttpLoggingPropertiesTest {
               assertThat(properties.getLogLevel())
                   .as("Should bind invalid value (validation should be done in filter)")
                   .isEqualTo("INVALID");
+              assertThat(validator.validate(properties))
+                  .as("Unknown non-null log levels should remain valid configuration")
+                  .isEmpty();
             });
   }
 
@@ -591,4 +655,17 @@ class HttpLoggingPropertiesTest {
   @Configuration
   @EnableConfigurationProperties(HttpLoggingProperties.class)
   static class TestConfig {}
+
+  private void assertRequiredPropertyViolation(
+      String propertyName, Consumer<HttpLoggingProperties> propertiesConsumer) {
+    var properties = new HttpLoggingProperties();
+    propertiesConsumer.accept(properties);
+
+    var violations = validator.validate(properties);
+
+    assertThat(violations)
+        .as(propertyName + " should be required")
+        .extracting(violation -> violation.getPropertyPath().toString())
+        .containsExactly(propertyName);
+  }
 }

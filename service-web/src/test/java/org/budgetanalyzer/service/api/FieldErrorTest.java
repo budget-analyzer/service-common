@@ -1,6 +1,7 @@
 package org.budgetanalyzer.service.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,7 +21,7 @@ class FieldErrorTest {
     var message = "must be a valid email address";
     var rejectedValue = "invalid@email";
 
-    var fieldError = FieldError.of(field, message, rejectedValue);
+    var fieldError = FieldError.forField(field, message, rejectedValue);
 
     assertThat(fieldError.getField()).isEqualTo(field);
     assertThat(fieldError.getMessage()).isEqualTo(message);
@@ -33,7 +34,7 @@ class FieldErrorTest {
     var field = "description";
     var message = "must not be null";
 
-    var fieldError = FieldError.of(field, message, null);
+    var fieldError = FieldError.forField(field, message, null);
 
     assertThat(fieldError.getField()).isEqualTo(field);
     assertThat(fieldError.getMessage()).isEqualTo(message);
@@ -41,39 +42,35 @@ class FieldErrorTest {
   }
 
   @Test
-  @DisplayName("Should create field error with null field")
-  void shouldCreateFieldErrorWithNullField() {
-    var message = "validation failed";
-    var rejectedValue = "some-value";
-
-    var fieldError = FieldError.of(null, message, rejectedValue);
-
-    assertThat(fieldError.getField()).isNull();
-    assertThat(fieldError.getMessage()).isEqualTo(message);
-    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+  @DisplayName("Should reject null field in strict field factory")
+  void shouldRejectNullFieldInStrictFieldFactory() {
+    assertThatThrownBy(() -> FieldError.forField(null, "validation failed", "some-value"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("field must not be null");
   }
 
   @Test
-  @DisplayName("Should create field error with null message")
-  void shouldCreateFieldErrorWithNullMessage() {
-    var field = "amount";
-    var rejectedValue = "-100";
-
-    var fieldError = FieldError.of(field, null, rejectedValue);
-
-    assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isNull();
-    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+  @DisplayName("Should reject null message in strict field factory")
+  void shouldRejectNullMessageInStrictFieldFactory() {
+    assertThatThrownBy(() -> FieldError.forField("amount", null, "-100"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
   }
 
   @Test
-  @DisplayName("Should create field error with all null values")
-  void shouldCreateFieldErrorWithAllNullValues() {
-    var fieldError = FieldError.of(null, null, null);
+  @DisplayName("Should reject null field in field factory")
+  void shouldRejectNullFieldInFieldFactory() {
+    assertThatThrownBy(() -> FieldError.of(null, "validation failed", "some-value"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("field must not be null");
+  }
 
-    assertThat(fieldError.getField()).isNull();
-    assertThat(fieldError.getMessage()).isNull();
-    assertThat(fieldError.getRejectedValue()).isNull();
+  @Test
+  @DisplayName("Should reject null message in field factory")
+  void shouldRejectNullMessageInFieldFactory() {
+    assertThatThrownBy(() -> FieldError.of("amount", null, "-100"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
   }
 
   @Test
@@ -81,7 +78,7 @@ class FieldErrorTest {
   void shouldHandleStringRejectedValue() {
     var rejectedValue = "invalid-string";
 
-    var fieldError = FieldError.of("username", "invalid format", rejectedValue);
+    var fieldError = FieldError.forField("username", "invalid format", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
     assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(String.class);
@@ -92,7 +89,7 @@ class FieldErrorTest {
   void shouldHandleIntegerRejectedValue() {
     var rejectedValue = -100;
 
-    var fieldError = FieldError.of("age", "must be positive", rejectedValue);
+    var fieldError = FieldError.forField("age", "must be positive", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
     assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Integer.class);
@@ -103,7 +100,7 @@ class FieldErrorTest {
   void shouldHandleLongRejectedValue() {
     var rejectedValue = 999999999999L;
 
-    var fieldError = FieldError.of("id", "id too large", rejectedValue);
+    var fieldError = FieldError.forField("id", "id too large", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
     assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Long.class);
@@ -114,7 +111,7 @@ class FieldErrorTest {
   void shouldHandleBigDecimalRejectedValue() {
     var rejectedValue = new BigDecimal("-100.50");
 
-    var fieldError = FieldError.of("amount", "must be positive", rejectedValue);
+    var fieldError = FieldError.forField("amount", "must be positive", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
     assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(BigDecimal.class);
@@ -125,7 +122,7 @@ class FieldErrorTest {
   void shouldHandleBooleanRejectedValue() {
     var rejectedValue = false;
 
-    var fieldError = FieldError.of("active", "must be true", rejectedValue);
+    var fieldError = FieldError.forField("active", "must be true", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
     assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Boolean.class);
@@ -136,7 +133,7 @@ class FieldErrorTest {
   void shouldHandleListRejectedValue() {
     var rejectedValue = List.of("a", "b", "c");
 
-    var fieldError = FieldError.of("tags", "too many items", rejectedValue);
+    var fieldError = FieldError.forField("tags", "too many items", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
@@ -146,7 +143,7 @@ class FieldErrorTest {
   void shouldHandleMapRejectedValue() {
     var rejectedValue = Map.of("key1", "value1", "key2", "value2");
 
-    var fieldError = FieldError.of("metadata", "invalid structure", rejectedValue);
+    var fieldError = FieldError.forField("metadata", "invalid structure", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
@@ -158,7 +155,7 @@ class FieldErrorTest {
 
     var rejectedValue = new User("John", -5);
 
-    var fieldError = FieldError.of("user", "age must be positive", rejectedValue);
+    var fieldError = FieldError.forField("user", "age must be positive", rejectedValue);
 
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
@@ -166,7 +163,7 @@ class FieldErrorTest {
   @Test
   @DisplayName("Should support static factory method pattern")
   void shouldSupportStaticFactoryMethodPattern() {
-    var fieldError = FieldError.of("email", "invalid format", "not-an-email");
+    var fieldError = FieldError.forField("email", "invalid format", "not-an-email");
 
     assertThat(fieldError).isNotNull();
     assertThat(fieldError.getField()).isEqualTo("email");
@@ -179,7 +176,7 @@ class FieldErrorTest {
     var message = "invalid zip code format";
     var rejectedValue = "ABCDE";
 
-    var fieldError = FieldError.of(field, message, rejectedValue);
+    var fieldError = FieldError.forField(field, message, rejectedValue);
 
     assertThat(fieldError.getField()).isEqualTo(field);
     assertThat(fieldError.getMessage()).isEqualTo(message);
@@ -193,7 +190,7 @@ class FieldErrorTest {
     var message = "amount must be positive";
     var rejectedValue = new BigDecimal("-50.00");
 
-    var fieldError = FieldError.of(field, message, rejectedValue);
+    var fieldError = FieldError.forField(field, message, rejectedValue);
 
     assertThat(fieldError.getField()).isEqualTo(field);
   }
@@ -208,12 +205,44 @@ class FieldErrorTest {
     var message = "must not be null";
     var rejectedValue = "invalid";
 
-    var fieldError = FieldError.of(index, field, message, rejectedValue);
+    var fieldError = FieldError.forIndexedField(index, field, message, rejectedValue);
 
     assertThat(fieldError.getIndex()).isEqualTo(index);
     assertThat(fieldError.getField()).isEqualTo(field);
     assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+  }
+
+  @Test
+  @DisplayName("Should reject null field in strict indexed field factory")
+  void shouldRejectNullFieldInStrictIndexedFieldFactory() {
+    assertThatThrownBy(() -> FieldError.forIndexedField(0, null, "must not be null", null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("field must not be null");
+  }
+
+  @Test
+  @DisplayName("Should reject null message in strict indexed field factory")
+  void shouldRejectNullMessageInStrictIndexedFieldFactory() {
+    assertThatThrownBy(() -> FieldError.forIndexedField(0, "amount", null, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
+  }
+
+  @Test
+  @DisplayName("Should reject null field in indexed field factory")
+  void shouldRejectNullFieldInIndexedFieldFactory() {
+    assertThatThrownBy(() -> FieldError.of(0, null, "must not be null", null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("field must not be null");
+  }
+
+  @Test
+  @DisplayName("Should reject null message in indexed field factory")
+  void shouldRejectNullMessageInIndexedFieldFactory() {
+    assertThatThrownBy(() -> FieldError.of(0, "amount", null, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
   }
 
   @Test
@@ -223,7 +252,7 @@ class FieldErrorTest {
     var field = "date";
     var message = "date is required";
 
-    var fieldError = FieldError.of(index, field, message, null);
+    var fieldError = FieldError.forIndexedField(index, field, message, null);
 
     assertThat(fieldError.getIndex()).isEqualTo(index);
     assertThat(fieldError.getField()).isEqualTo(field);
@@ -234,7 +263,7 @@ class FieldErrorTest {
   @Test
   @DisplayName("Should create indexed field error with zero index")
   void shouldCreateIndexedFieldErrorWithZeroIndex() {
-    var fieldError = FieldError.of(0, "field", "error", null);
+    var fieldError = FieldError.forIndexedField(0, "field", "error", null);
 
     assertThat(fieldError.getIndex()).isEqualTo(0);
   }
@@ -242,7 +271,7 @@ class FieldErrorTest {
   @Test
   @DisplayName("Non-indexed field error should have null index")
   void nonIndexedFieldErrorShouldHaveNullIndex() {
-    var fieldError = FieldError.of("email", "invalid format", "bad-email");
+    var fieldError = FieldError.forField("email", "invalid format", "bad-email");
 
     assertThat(fieldError.getIndex()).isNull();
   }

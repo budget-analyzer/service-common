@@ -84,9 +84,9 @@ public interface ApiExceptionHandler {
    * @return API error response
    */
   default ApiErrorResponse buildValidationError(List<FieldError> fieldErrors) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.VALIDATION_ERROR)
-        .message("Validation failed for " + fieldErrors.size() + " field(s)")
+    return ApiErrorResponse.builder(
+            ApiErrorType.VALIDATION_ERROR,
+            "Validation failed for " + fieldErrors.size() + " field(s)")
         .fieldErrors(fieldErrors)
         .build();
   }
@@ -98,9 +98,8 @@ public interface ApiExceptionHandler {
    * @return API error response
    */
   default ApiErrorResponse buildNotFoundError(ResourceNotFoundException exception) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.NOT_FOUND)
-        .message(exception.getMessage())
+    return ApiErrorResponse.builder(
+            ApiErrorType.NOT_FOUND, messageOrDefault(exception.getMessage(), "Resource not found"))
         .build();
   }
 
@@ -111,9 +110,9 @@ public interface ApiExceptionHandler {
    * @return API error response
    */
   default ApiErrorResponse buildInvalidRequestError(InvalidRequestException exception) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.INVALID_REQUEST)
-        .message(exception.getMessage())
+    return ApiErrorResponse.builder(
+            ApiErrorType.INVALID_REQUEST,
+            messageOrDefault(exception.getMessage(), "Invalid request"))
         .build();
   }
 
@@ -128,10 +127,10 @@ public interface ApiExceptionHandler {
    */
   default ApiErrorResponse buildBusinessError(BusinessException exception) {
     var builder =
-        ApiErrorResponse.builder()
-            .type(ApiErrorType.APPLICATION_ERROR)
-            .code(exception.getCode())
-            .message(exception.getMessage());
+        ApiErrorResponse.builder(
+                ApiErrorType.APPLICATION_ERROR,
+                messageOrDefault(exception.getMessage(), "Application error"))
+            .code(exception.getCode());
 
     if (exception.hasFieldErrors()) {
       builder.fieldErrors(exception.getFieldErrors());
@@ -147,9 +146,9 @@ public interface ApiExceptionHandler {
    * @return API error response
    */
   default ApiErrorResponse buildServiceUnavailableError(ServiceException exception) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.SERVICE_UNAVAILABLE)
-        .message(exception.getMessage())
+    return ApiErrorResponse.builder(
+            ApiErrorType.SERVICE_UNAVAILABLE,
+            messageOrDefault(exception.getMessage(), "Service unavailable"))
         .build();
   }
 
@@ -160,9 +159,7 @@ public interface ApiExceptionHandler {
    * @return API error response
    */
   default ApiErrorResponse buildInternalError(Exception exception) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.INTERNAL_ERROR)
-        .message("An unexpected error occurred")
+    return ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "An unexpected error occurred")
         .build();
   }
 
@@ -177,10 +174,7 @@ public interface ApiExceptionHandler {
    * @return API error response with UNAUTHORIZED type
    */
   default ApiErrorResponse buildUnauthorizedError() {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.UNAUTHORIZED)
-        .message("Authentication required")
-        .build();
+    return ApiErrorResponse.builder(ApiErrorType.UNAUTHORIZED, "Authentication required").build();
   }
 
   /**
@@ -194,9 +188,8 @@ public interface ApiExceptionHandler {
    * @return API error response with FORBIDDEN type
    */
   default ApiErrorResponse buildPermissionDeniedError() {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.FORBIDDEN)
-        .message("You do not have permission to perform this action")
+    return ApiErrorResponse.builder(
+            ApiErrorType.FORBIDDEN, "You do not have permission to perform this action")
         .build();
   }
 
@@ -272,9 +265,9 @@ public interface ApiExceptionHandler {
     return bindingResult.getFieldErrors().stream()
         .map(
             springFieldError ->
-                FieldError.of(
+                FieldError.forField(
                     springFieldError.getField(),
-                    springFieldError.getDefaultMessage(),
+                    messageOrDefault(springFieldError.getDefaultMessage(), "Invalid value"),
                     springFieldError.getRejectedValue()))
         .toList();
   }
@@ -288,9 +281,8 @@ public interface ApiExceptionHandler {
   default ResolvedError resolveResponseStatus(ResponseStatusException exception) {
     var statusCode = exception.getStatusCode();
     var response =
-        ApiErrorResponse.builder()
-            .type(errorTypeForStatus(statusCode))
-            .message(messageForStatus(statusCode, exception.getReason()))
+        ApiErrorResponse.builder(
+                errorTypeForStatus(statusCode), messageForStatus(statusCode, exception.getReason()))
             .build();
     return new ResolvedError(statusCode, response, exception.getHeaders());
   }
@@ -321,9 +313,10 @@ public interface ApiExceptionHandler {
    *
    * <p>Security: authentication (401) and authorization (403) errors use hardcoded generic messages
    * to avoid leaking security-sensitive details (e.g., which credential failed, which permission
-   * was required). All other status codes pass through the original reason. This mirrors the policy
-   * in {@link #buildUnauthorizedError()} and {@link #buildPermissionDeniedError()} — keep the
-   * messages in sync if they ever change.
+   * was required). All other status codes pass through the original reason when present and fall
+   * back to the HTTP status reason phrase when no reason is available. This mirrors the policy in
+   * {@link #buildUnauthorizedError()} and {@link #buildPermissionDeniedError()} — keep the messages
+   * in sync if they ever change.
    *
    * @param statusCode the HTTP status code
    * @param reason the original exception reason (may be {@code null})
@@ -333,7 +326,31 @@ public interface ApiExceptionHandler {
     return switch (statusCode.value()) {
       case 401 -> "Authentication required";
       case 403 -> "You do not have permission to perform this action";
-      default -> reason;
+      default -> messageOrDefault(reason, defaultMessageForStatus(statusCode));
     };
+  }
+
+  /**
+   * Returns the provided message or a fallback when the source message is null.
+   *
+   * @param message source message that may be null
+   * @param defaultMessage fallback message
+   * @return source message when present, otherwise the fallback
+   */
+  static String messageOrDefault(String message, String defaultMessage) {
+    return message == null ? defaultMessage : message;
+  }
+
+  /**
+   * Returns a default response message for an HTTP status code.
+   *
+   * @param statusCode HTTP status code
+   * @return status reason phrase when available, otherwise a generic status message
+   */
+  static String defaultMessageForStatus(HttpStatusCode statusCode) {
+    if (statusCode instanceof HttpStatus httpStatus) {
+      return httpStatus.getReasonPhrase();
+    }
+    return "HTTP status " + statusCode.value();
   }
 }

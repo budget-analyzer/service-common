@@ -187,7 +187,7 @@ class ClaimsHeaderAuthenticationFilterTest {
   void shouldClearExistingAuthenticationWhenHeadersAreAbsent() throws Exception {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new ClaimsHeaderAuthenticationToken("usr_existing", Set.of(), List.of()));
+            ClaimsHeaderAuthenticationToken.authenticated("usr_existing", Set.of(), List.of()));
 
     var request = new MockHttpServletRequest();
 
@@ -200,7 +200,7 @@ class ClaimsHeaderAuthenticationFilterTest {
   void shouldRejectClaimsHeadersWithoutUserId() throws Exception {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new ClaimsHeaderAuthenticationToken("usr_existing", Set.of(), List.of()));
+            ClaimsHeaderAuthenticationToken.authenticated("usr_existing", Set.of(), List.of()));
 
     var request = new MockHttpServletRequest();
     request.addHeader("X-Permissions", "transactions:read");

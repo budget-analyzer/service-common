@@ -142,9 +142,9 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(NoHandlerFoundException exception, WebRequest request) {
     logException(ApiErrorType.NOT_FOUND, null, exception);
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.NOT_FOUND)
-        .message(exception.getMessage())
+    return ApiErrorResponse.builder(
+            ApiErrorType.NOT_FOUND,
+            ApiExceptionHandler.messageOrDefault(exception.getMessage(), "Resource not found"))
         .build();
   }
 

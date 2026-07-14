@@ -2,6 +2,8 @@ package org.budgetanalyzer.service.security;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -28,19 +30,45 @@ public class ClaimsHeaderAuthenticationToken extends AbstractAuthenticationToken
   private final String userId;
   private final Set<String> roles;
 
+  private ClaimsHeaderAuthenticationToken(
+      String userId, Set<String> roles, Collection<? extends GrantedAuthority> authorities) {
+    super(Collections.unmodifiableList(copyAuthorities(authorities)));
+    this.userId = requireUserId(userId);
+    this.roles = Collections.unmodifiableSet(copyRoles(roles));
+    setAuthenticated(true);
+  }
+
   /**
-   * Creates an authenticated token from claims headers.
+   * Creates an authenticated token from validated claims header values.
    *
    * @param userId the user ID from {@code X-User-Id} header
    * @param roles the raw role names (without {@code ROLE_} prefix)
    * @param authorities the granted authorities (permissions + ROLE_-prefixed roles)
+   * @return an authenticated token
+   * @throws NullPointerException when userId, roles, or authorities is null
+   * @throws IllegalArgumentException when userId is blank
    */
-  public ClaimsHeaderAuthenticationToken(
+  public static ClaimsHeaderAuthenticationToken authenticated(
       String userId, Set<String> roles, Collection<? extends GrantedAuthority> authorities) {
-    super(Collections.unmodifiableList(new java.util.ArrayList<>(authorities)));
-    this.userId = userId;
-    this.roles = Collections.unmodifiableSet(roles);
-    setAuthenticated(true);
+    return new ClaimsHeaderAuthenticationToken(userId, roles, authorities);
+  }
+
+  private static String requireUserId(String userId) {
+    var validatedUserId = Objects.requireNonNull(userId, "userId must not be null");
+    if (validatedUserId.isBlank()) {
+      throw new IllegalArgumentException("userId must not be blank");
+    }
+    return validatedUserId;
+  }
+
+  private static Set<String> copyRoles(Set<String> roles) {
+    return new LinkedHashSet<>(Objects.requireNonNull(roles, "roles must not be null"));
+  }
+
+  private static java.util.ArrayList<GrantedAuthority> copyAuthorities(
+      Collection<? extends GrantedAuthority> authorities) {
+    return new java.util.ArrayList<>(
+        Objects.requireNonNull(authorities, "authorities must not be null"));
   }
 
   /**

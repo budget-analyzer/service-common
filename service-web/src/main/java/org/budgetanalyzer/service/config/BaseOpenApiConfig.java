@@ -193,11 +193,7 @@ public abstract class BaseOpenApiConfig {
   protected ApiResponse buildExampleApiErrorResponse(
       HttpStatus httpStatus, String message, String code) {
     var exampleResponse =
-        ApiErrorResponse.builder()
-            .type(getTypeFromHttpStatus(httpStatus))
-            .message(message)
-            .code(code)
-            .build();
+        ApiErrorResponse.builder(getTypeFromHttpStatus(httpStatus), message).code(code).build();
 
     return new ApiResponse()
         .description(httpStatus.getReasonPhrase())

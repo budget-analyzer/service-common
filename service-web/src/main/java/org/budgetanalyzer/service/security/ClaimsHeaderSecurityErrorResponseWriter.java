@@ -40,16 +40,12 @@ final class ClaimsHeaderSecurityErrorResponseWriter {
   }
 
   private static ApiErrorResponse unauthorized() {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.UNAUTHORIZED)
-        .message("Authentication required")
-        .build();
+    return ApiErrorResponse.builder(ApiErrorType.UNAUTHORIZED, "Authentication required").build();
   }
 
   private static ApiErrorResponse forbidden() {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.FORBIDDEN)
-        .message("You do not have permission to perform this action")
+    return ApiErrorResponse.builder(
+            ApiErrorType.FORBIDDEN, "You do not have permission to perform this action")
         .build();
   }
 }
