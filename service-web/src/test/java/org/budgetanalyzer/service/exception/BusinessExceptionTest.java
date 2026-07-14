@@ -161,8 +161,8 @@ class BusinessExceptionTest {
   void shouldCreateExceptionWithFieldErrors() {
     var fieldErrors =
         List.of(
-            FieldError.of(0, "amount", "must not be null", null),
-            FieldError.of(2, "date", "must be a valid date", "invalid-date"));
+            FieldError.forIndexedField(0, "amount", "must not be null", null),
+            FieldError.forIndexedField(2, "date", "must be a valid date", "invalid-date"));
 
     var exception =
         new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
@@ -196,12 +196,13 @@ class BusinessExceptionTest {
   @Test
   @DisplayName("Should return immutable field errors list")
   void shouldReturnImmutableFieldErrorsList() {
-    var fieldErrors = List.of(FieldError.of(0, "field", "error", null));
+    var fieldErrors = List.of(FieldError.forIndexedField(0, "field", "error", null));
 
     var exception = new BusinessException("Error", "CODE", fieldErrors);
 
     var returnedErrors = exception.getFieldErrors();
-    assertThatThrownBy(() -> returnedErrors.add(FieldError.of(1, "other", "error", null)))
+    assertThatThrownBy(
+            () -> returnedErrors.add(FieldError.forIndexedField(1, "other", "error", null)))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 

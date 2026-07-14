@@ -80,8 +80,7 @@ Service Common promotes code reuse and consistency across microservices by:
 For local development, publish these artifacts to Maven Local and consume them from sibling
 Budget Analyzer services. CI workflows publish snapshot and release artifacts to GitHub Packages.
 Examples below use `<service-common-version>` as a placeholder. Use the checked-in version literal
-from `build.gradle.kts` for the build you are consuming (for example, `0.0.1-SNAPSHOT` during local
-snapshot development).
+from `build.gradle.kts` for the build you are consuming.
 
 ### Which Module Should I Use?
 
@@ -158,6 +157,8 @@ When service-web is on your classpath, you automatically get:
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
   - Text bodies only: common secret fields in JSON and form payloads are redacted
   - Multipart, binary, and compressed bodies are omitted with placeholders instead of raw content
+  - Required list settings and `log-level` must not be explicit null values; startup fails during
+    configuration validation if they are bound as null. Empty lists are valid.
 - **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
 
 **Example configuration** (application.yml):

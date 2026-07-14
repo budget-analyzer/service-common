@@ -1,5 +1,7 @@
 package org.budgetanalyzer.service.api;
 
+import java.util.Objects;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -14,14 +16,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *
  * <pre>
  * // Simple field error
- * FieldError error = FieldError.of(
+ * FieldError error = FieldError.forField(
  *     "email",
  *     "must be a valid email address",
  *     "invalid@email"
  * );
  *
  * // Indexed field error (for batch operations)
- * FieldError batchError = FieldError.of(
+ * FieldError batchError = FieldError.forIndexedField(
  *     44,
  *     "amount",
  *     "must not be null",
@@ -150,11 +152,47 @@ public class FieldError {
    *
    * @param field the field name that failed validation
    * @param message the validation error message
-   * @param rejectedValue the value that was rejected
+   * @param rejectedValue the value that was rejected (may be null)
+   * @return a new FieldError instance
+   */
+  public static FieldError forField(String field, String message, Object rejectedValue) {
+    return new FieldError(
+        Objects.requireNonNull(field, "field must not be null"),
+        Objects.requireNonNull(message, "message must not be null"),
+        rejectedValue);
+  }
+
+  /**
+   * Static factory method for creating an indexed FieldError instance.
+   *
+   * <p>Use this for batch validation errors where each error is associated with a specific item in
+   * a list.
+   *
+   * @param index the zero-based index of the item in the batch
+   * @param field the field name that failed validation
+   * @param message the validation error message
+   * @param rejectedValue the value that was rejected (may be null)
+   * @return a new FieldError instance with index
+   */
+  public static FieldError forIndexedField(
+      int index, String field, String message, Object rejectedValue) {
+    return new FieldError(
+        index,
+        Objects.requireNonNull(field, "field must not be null"),
+        Objects.requireNonNull(message, "message must not be null"),
+        rejectedValue);
+  }
+
+  /**
+   * Static factory method for creating a FieldError instance without index.
+   *
+   * @param field the field name that failed validation
+   * @param message the validation error message
+   * @param rejectedValue the value that was rejected (may be null)
    * @return a new FieldError instance
    */
   public static FieldError of(String field, String message, Object rejectedValue) {
-    return new FieldError(field, message, rejectedValue);
+    return forField(field, message, rejectedValue);
   }
 
   /**
@@ -170,6 +208,6 @@ public class FieldError {
    * @return a new FieldError instance with index
    */
   public static FieldError of(int index, String field, String message, Object rejectedValue) {
-    return new FieldError(index, field, message, rejectedValue);
+    return forIndexedField(index, field, message, rejectedValue);
   }
 }

@@ -1,15 +1,20 @@
 package org.budgetanalyzer.service.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /** Unit tests for {@link ApiErrorResponse}. */
 @DisplayName("ApiErrorResponse Tests")
 class ApiErrorResponseTest {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   @DisplayName("Should build error response with type and message only")
@@ -17,7 +22,7 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.INVALID_REQUEST;
     var message = "Invalid request format";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).build();
+    var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -33,16 +38,11 @@ class ApiErrorResponseTest {
     var code = "VALIDATION_001";
     var fieldErrors =
         List.of(
-            FieldError.of("email", "invalid format", "not-an-email"),
-            FieldError.of("age", "must be positive", -5));
+            FieldError.forField("email", "invalid format", "not-an-email"),
+            FieldError.forField("age", "must be positive", -5));
 
     var response =
-        ApiErrorResponse.builder()
-            .type(type)
-            .message(message)
-            .code(code)
-            .fieldErrors(fieldErrors)
-            .build();
+        ApiErrorResponse.builder(type, message).code(code).fieldErrors(fieldErrors).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -58,7 +58,7 @@ class ApiErrorResponseTest {
     var message = "Business rule violation";
     var code = "NEGATIVE_AMOUNT";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).code(code).build();
+    var response = ApiErrorResponse.builder(type, message).code(code).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -71,10 +71,9 @@ class ApiErrorResponseTest {
   void shouldBuildValidationErrorWithFieldErrors() {
     var type = ApiErrorType.VALIDATION_ERROR;
     var message = "One or more fields have validation errors";
-    var fieldErrors = List.of(FieldError.of("amount", "must be positive", "-100.50"));
+    var fieldErrors = List.of(FieldError.forField("amount", "must be positive", "-100.50"));
 
-    var response =
-        ApiErrorResponse.builder().type(type).message(message).fieldErrors(fieldErrors).build();
+    var response = ApiErrorResponse.builder(type, message).fieldErrors(fieldErrors).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -88,7 +87,7 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.NOT_FOUND;
     var message = "Transaction not found with id: 123";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).build();
+    var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -100,7 +99,7 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.SERVICE_UNAVAILABLE;
     var message = "Database connection failed";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).build();
+    var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -112,32 +111,46 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.INTERNAL_ERROR;
     var message = "Unexpected server error";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).build();
+    var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
-  @DisplayName("Should handle null type")
-  void shouldHandleNullType() {
-    var message = "Error message";
-
-    var response = ApiErrorResponse.builder().type(null).message(message).build();
-
-    assertThat(response.getType()).isNull();
-    assertThat(response.getMessage()).isEqualTo(message);
+  @DisplayName("Should reject null type in strict builder")
+  void shouldRejectNullTypeInStrictBuilder() {
+    assertThatThrownBy(() -> ApiErrorResponse.builder(null, "Error message"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("type must not be null");
   }
 
   @Test
-  @DisplayName("Should handle null message")
-  void shouldHandleNullMessage() {
-    var type = ApiErrorType.INTERNAL_ERROR;
+  @DisplayName("Should reject null message in strict builder")
+  void shouldRejectNullMessageInStrictBuilder() {
+    assertThatThrownBy(() -> ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
+  }
 
-    var response = ApiErrorResponse.builder().type(type).message(null).build();
+  @Test
+  @DisplayName("Should reject null type when builder setter clears required type")
+  void shouldRejectNullTypeWhenBuilderSetterClearsRequiredType() {
+    var builder = ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "Error message");
 
-    assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isNull();
+    assertThatThrownBy(() -> builder.type(null).build())
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("type must not be null");
+  }
+
+  @Test
+  @DisplayName("Should reject null message when builder setter clears required message")
+  void shouldRejectNullMessageWhenBuilderSetterClearsRequiredMessage() {
+    var builder = ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "Error message");
+
+    assertThatThrownBy(() -> builder.message(null).build())
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message must not be null");
   }
 
   @Test
@@ -146,7 +159,7 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.APPLICATION_ERROR;
     var message = "Error";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).code(null).build();
+    var response = ApiErrorResponse.builder(type, message).code(null).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -159,7 +172,7 @@ class ApiErrorResponseTest {
     var type = ApiErrorType.VALIDATION_ERROR;
     var message = "Validation failed";
 
-    var response = ApiErrorResponse.builder().type(type).message(message).fieldErrors(null).build();
+    var response = ApiErrorResponse.builder(type, message).fieldErrors(null).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getMessage()).isEqualTo(message);
@@ -173,8 +186,7 @@ class ApiErrorResponseTest {
     var message = "Validation failed";
     var fieldErrors = List.<FieldError>of();
 
-    var response =
-        ApiErrorResponse.builder().type(type).message(message).fieldErrors(fieldErrors).build();
+    var response = ApiErrorResponse.builder(type, message).fieldErrors(fieldErrors).build();
 
     assertThat(response.getType()).isEqualTo(type);
     assertThat(response.getFieldErrors()).isNotNull();
@@ -185,9 +197,7 @@ class ApiErrorResponseTest {
   @DisplayName("Should support method chaining in builder")
   void shouldSupportMethodChainingInBuilder() {
     var response =
-        ApiErrorResponse.builder()
-            .type(ApiErrorType.APPLICATION_ERROR)
-            .message("Business error")
+        ApiErrorResponse.builder(ApiErrorType.APPLICATION_ERROR, "Business error")
             .code("BIZ_001")
             .build();
 
@@ -200,14 +210,12 @@ class ApiErrorResponseTest {
   void shouldHandleMultipleFieldErrors() {
     var fieldErrors =
         List.of(
-            FieldError.of("email", "invalid format", "bad-email"),
-            FieldError.of("age", "must be positive", -1),
-            FieldError.of("name", "must not be blank", ""));
+            FieldError.forField("email", "invalid format", "bad-email"),
+            FieldError.forField("age", "must be positive", -1),
+            FieldError.forField("name", "must not be blank", ""));
 
     var response =
-        ApiErrorResponse.builder()
-            .type(ApiErrorType.VALIDATION_ERROR)
-            .message("Multiple validation errors")
+        ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "Multiple validation errors")
             .fieldErrors(fieldErrors)
             .build();
 
@@ -215,24 +223,28 @@ class ApiErrorResponseTest {
   }
 
   @Test
-  @DisplayName("Should allow building minimal error response")
-  void shouldAllowBuildingMinimalErrorResponse() {
-    var response = ApiErrorResponse.builder().build();
+  @DisplayName("Should serialize required fields built with strict API")
+  void shouldSerializeRequiredFieldsBuiltWithStrictApi() throws Exception {
+    var response =
+        ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "Validation failed")
+            .fieldErrors(List.of(FieldError.forField("email", "invalid format", "bad-email")))
+            .build();
 
-    assertThat(response.getType()).isNull();
-    assertThat(response.getMessage()).isNull();
-    assertThat(response.getCode()).isNull();
-    assertThat(response.getFieldErrors()).isNull();
+    var json = objectMapper.readTree(objectMapper.writeValueAsString(response));
+
+    assertThat(json.path("type").asText()).isEqualTo("VALIDATION_ERROR");
+    assertThat(json.path("message").asText()).isEqualTo("Validation failed");
+    assertThat(json.path("fieldErrors").get(0).path("field").asText()).isEqualTo("email");
+    assertThat(json.path("fieldErrors").get(0).path("message").asText())
+        .isEqualTo("invalid format");
   }
 
   @Test
   @DisplayName("Should overwrite values when builder methods called multiple times")
   void shouldOverwriteValuesWhenBuilderMethodsCalledMultipleTimes() {
     var response =
-        ApiErrorResponse.builder()
-            .type(ApiErrorType.NOT_FOUND)
+        ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "First message")
             .type(ApiErrorType.INTERNAL_ERROR) // Overwrite
-            .message("First message")
             .message("Second message") // Overwrite
             .build();
 
@@ -243,14 +255,9 @@ class ApiErrorResponseTest {
   @Test
   @DisplayName("Should create independent instances from same builder class")
   void shouldCreateIndependentInstancesFromSameBuilderClass() {
-    var response1 =
-        ApiErrorResponse.builder().type(ApiErrorType.NOT_FOUND).message("Not found").build();
+    var response1 = ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "Not found").build();
 
-    var response2 =
-        ApiErrorResponse.builder()
-            .type(ApiErrorType.INTERNAL_ERROR)
-            .message("Internal error")
-            .build();
+    var response2 = ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "Internal error").build();
 
     assertThat(response1.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
     assertThat(response2.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);

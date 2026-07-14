@@ -1,6 +1,7 @@
 package org.budgetanalyzer.core.csv;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a single row from a parsed CSV file.
@@ -27,6 +28,24 @@ import java.util.Map;
  * </pre>
  *
  * @param lineNumber the line number in the original CSV file
- * @param values a map of column headers to cell values for this row
+ * @param values a required map of column headers to cell values for this row
  */
-public record CsvRow(int lineNumber, Map<String, String> values) {}
+public record CsvRow(int lineNumber, Map<String, String> values) {
+
+  /** Creates a CSV row with a required values map. */
+  public CsvRow {
+    Objects.requireNonNull(values, "values must not be null");
+  }
+
+  /**
+   * Creates a CSV row with a required values map.
+   *
+   * @param lineNumber the line number in the original CSV file
+   * @param values a map of column headers to cell values for this row
+   * @return a CSV row with the supplied line number and values
+   * @throws NullPointerException if {@code values} is null
+   */
+  public static CsvRow of(int lineNumber, Map<String, String> values) {
+    return new CsvRow(lineNumber, Objects.requireNonNull(values, "values must not be null"));
+  }
+}

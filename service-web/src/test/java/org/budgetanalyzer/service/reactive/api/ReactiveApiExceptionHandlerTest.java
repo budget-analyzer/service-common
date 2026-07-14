@@ -396,7 +396,7 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isNull();
+              assertThat(body.getMessage()).isEqualTo("Invalid request");
             })
         .verifyComplete();
   }
@@ -769,10 +769,7 @@ class ReactiveApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.NOT_FOUND,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.NOT_FOUND)
-                .message("shared not found")
-                .build());
+            ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "shared not found").build());
     var trackingHandler = new TrackingReactiveApiExceptionHandler(resolvedError, null);
     var exception = new ResourceNotFoundException("controller-level message");
 
@@ -797,9 +794,7 @@ class ReactiveApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.BAD_REQUEST,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.INVALID_REQUEST)
-                .message("shared invalid request")
+            ApiErrorResponse.builder(ApiErrorType.INVALID_REQUEST, "shared invalid request")
                 .build());
     var trackingHandler = new TrackingReactiveApiExceptionHandler(resolvedError, null);
     var exception = new ResponseStatusException(HttpStatus.BAD_REQUEST, "original reason");
@@ -826,12 +821,10 @@ class ReactiveApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.BAD_REQUEST,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.VALIDATION_ERROR)
-                .message("shared validation")
+            ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "shared validation")
                 .fieldErrors(
                     java.util.List.of(
-                        org.budgetanalyzer.service.api.FieldError.of(
+                        org.budgetanalyzer.service.api.FieldError.forField(
                             "name", "must not be blank", "")))
                 .build());
     var trackingHandler = new TrackingReactiveApiExceptionHandler(null, resolvedError);

@@ -97,7 +97,8 @@ public class ClaimsHeaderAuthenticationFilter extends OncePerRequestFilter {
 
     var roleSet = new LinkedHashSet<>(validatedClaimsHeaders.roles());
     var authentication =
-        new ClaimsHeaderAuthenticationToken(validatedClaimsHeaders.userId(), roleSet, authorities);
+        ClaimsHeaderAuthenticationToken.authenticated(
+            validatedClaimsHeaders.userId(), roleSet, authorities);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     logger.trace(

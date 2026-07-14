@@ -31,6 +31,28 @@ All Budget Analyzer microservices use a standardized error response format provi
 | `code` | String | No | Machine-readable error code (for `APPLICATION_ERROR`) |
 | `fieldErrors` | Array | No | Field-level validation errors (for `VALIDATION_ERROR`) |
 
+## Constructing Error Responses
+
+Use the required-field construction APIs when creating error responses or field-level validation
+errors directly:
+
+```java
+var fieldError = FieldError.forField("amount", "must be greater than 0", "-100");
+
+var response = ApiErrorResponse.builder(
+        ApiErrorType.VALIDATION_ERROR,
+        "Validation failed for 1 field(s)")
+    .fieldErrors(List.of(fieldError))
+    .build();
+```
+
+For batch validation, use `FieldError.forIndexedField(index, field, message, rejectedValue)`.
+`rejectedValue` may be null because null is often the rejected input. Optional response fields such
+as `code` and `fieldErrors` remain optional.
+
+`ApiErrorResponse` rejects missing `type` and `message` at build time. All `FieldError` factories
+require `field` and `message`.
+
 ## Error Types
 
 The `ApiErrorType` enum defines standard error categories:
@@ -237,7 +259,9 @@ public TransactionResponse create(@Valid @RequestBody CreateTransactionRequest r
 | Other 4xx | `INVALID_REQUEST` |
 | Other 5xx | `INTERNAL_ERROR` |
 
-The exception's `reason` is passed as the response message (it is developer-controlled, not an internal detail leak).
+The exception's `reason` is passed as the response message when present (it is
+developer-controlled, not an internal detail leak). When no reason is available, the handler uses
+the HTTP status reason phrase so the required `message` field is still present.
 
 Any HTTP headers attached to the exception are also preserved. This matters for standard Web
 exceptions such as `MethodNotAllowedException` (`Allow` header) and

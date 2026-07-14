@@ -141,6 +141,47 @@ The `clean build` command will:
 
 **Never use** individual gradle tasks like `check`, `bootJar`, `checkstyleMain`, etc. Always use the full `clean build` sequence.
 
+## Null Handling and Validation Contracts
+
+**Core principle**: Use null checks and validation annotations where they define or enforce a real
+boundary. Do not repeat an already enforced contract at every internal call.
+
+### Bean Validation at Enforced Boundaries
+
+Use Jakarta Bean Validation where the framework actually invokes it:
+
+- API request models reached through `@Valid`
+- Configuration properties validated through `@Validated`
+- Spring component methods that intentionally opt into method validation
+
+Do not add `@NotNull` or other Jakarta constraints to ordinary service or internal method parameters
+solely to document an assumed contract. Those constraints are not enforced unless method validation
+is enabled and the call passes through the validating Spring proxy. An unenforced annotation gives
+a misleading impression of runtime protection.
+
+Use `@Validated` on a service only when the service is a genuine programmatic boundary that needs
+declarative runtime validation, such as a component called from multiple adapters, schedulers, or
+message consumers. Account for Spring proxy semantics: self-invocation does not trigger method
+validation.
+
+### Java Null Contracts
+
+- Parameters are non-null by convention unless their Javadoc or an established type contract says otherwise.
+- Use `Objects.requireNonNull` in published library constructors and entry points when null is
+  invalid, direct programmatic callers can violate the precondition, and failing immediately
+  improves diagnosis.
+- Do not repeat `requireNonNull` guards through private methods or service layers after an enforced
+  boundary has established the invariant.
+- Prefer `Optional` for a return value that represents expected absence. When a framework contract
+  or established API requires a nullable parameter or return value, document the nullable behavior
+  explicitly in Javadoc.
+- Use Spring nullability annotations when required to implement or override a Spring contract. Do
+  not add a project-wide nullability annotation library or annotate every parameter.
+
+Nullness is only one kind of contract. Services must still enforce the business invariants they own,
+including authorization, ownership, persistence state, valid state transitions, and cross-entity
+rules.
+
 ## Variable Declarations and Naming (Unified Design)
 
 **Core Principle**: `var` usage and type-based naming work together as a unified design. The variable name IS the type documentation - no mental mapping required.

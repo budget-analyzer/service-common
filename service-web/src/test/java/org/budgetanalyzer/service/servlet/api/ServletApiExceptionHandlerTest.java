@@ -145,8 +145,8 @@ class ServletApiExceptionHandlerTest {
   void shouldHandleBusinessExceptionWithFieldErrors() {
     var fieldErrors =
         List.of(
-            FieldError.of(0, "amount", "must not be null", null),
-            FieldError.of(2, "date", "must be a valid date", "invalid-date"));
+            FieldError.forIndexedField(0, "amount", "must not be null", null),
+            FieldError.forIndexedField(2, "date", "must be a valid date", "invalid-date"));
     var exception =
         new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
 
@@ -348,7 +348,7 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isNull();
+    assertThat(response.getMessage()).isEqualTo("Invalid request");
   }
 
   @Test
@@ -577,10 +577,7 @@ class ServletApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.NOT_FOUND,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.NOT_FOUND)
-                .message("shared not found")
-                .build());
+            ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "shared not found").build());
     var trackingHandler = new TrackingServletApiExceptionHandler(resolvedError, null);
     var exception = new ResourceNotFoundException("controller-level message");
 
@@ -599,9 +596,7 @@ class ServletApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.BAD_REQUEST,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.INVALID_REQUEST)
-                .message("shared invalid request")
+            ApiErrorResponse.builder(ApiErrorType.INVALID_REQUEST, "shared invalid request")
                 .build());
     var trackingHandler = new TrackingServletApiExceptionHandler(resolvedError, null);
     var exception = new ResponseStatusException(HttpStatus.BAD_REQUEST, "original reason");
@@ -623,10 +618,8 @@ class ServletApiExceptionHandlerTest {
     var resolvedError =
         new ApiExceptionHandler.ResolvedError(
             HttpStatus.BAD_REQUEST,
-            ApiErrorResponse.builder()
-                .type(ApiErrorType.VALIDATION_ERROR)
-                .message("shared validation")
-                .fieldErrors(List.of(FieldError.of("name", "must not be blank", "")))
+            ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "shared validation")
+                .fieldErrors(List.of(FieldError.forField("name", "must not be blank", "")))
                 .build());
     var trackingHandler = new TrackingServletApiExceptionHandler(null, resolvedError);
     var exception =

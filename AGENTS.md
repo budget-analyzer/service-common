@@ -50,11 +50,33 @@ Update the nearest affected documentation in the same work:
 - `README.md` when setup, usage, or repository purpose changes
 - `docs/` when architecture, configuration, APIs, behaviors, or operating procedures change
 
+When creating an implementation or execution plan intended for AI Session
+Handler, follow the [AI Session Handler plan format](../ai-session-handler/docs/plan-format.md),
+use its canonical template, replace every placeholder, and retain the numbered
+`## Phase N: Title` headings.
+
+Run a specific plan through the workspace wrapper with:
+
+```bash
+ai-session-handler run \
+  --plan /workspace/REPOSITORY/docs/plans/PLAN.md \
+  --max-phases 999 \
+  --quiet \
+  --agent-cmd "/workspace/ai-session-handler/.venv/bin/ai-session-handler-codex-high --model MODEL"
+```
+
+Omit `--model MODEL` from the quoted agent command to use the wrapper's
+configured or default model.
+
 Do not leave documentation updates as follow-up work.
 
 ## Documentation Strategy
 
 Prefer pattern-based guidance, discovery commands, and local source references over maintained inventories.
+
+Keep canonical documentation version-agnostic. Put release-specific migration guidance in
+`docs/plans/`, and define cross-cutting rules in one canonical document instead of repeating or
+continually cross-linking them across coding guides.
 
 The quick references and current entry-point lists in this file are orientation aids, not exhaustive source-of-truth lists. Where specific class names appear, treat them as representative current hooks and verify state with the adjacent `Discovery` blocks or linked local docs before relying on completeness.
 
@@ -189,8 +211,7 @@ dependencies {
 ```
 
 Use the checked-in version literal from `build.gradle.kts` when consuming the
-published artifacts. `0.0.1-SNAPSHOT` is only an example of a local snapshot
-version.
+published artifacts.
 
 **Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA). Platform artifacts manage versions only; consuming services must still declare the libraries they use.
 

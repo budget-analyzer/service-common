@@ -7,8 +7,7 @@
 ## Multi-Module Versioning
 
 **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** are versioned **together as a coordinated set**:
-- All artifacts share the same version number (for example, `0.0.1-SNAPSHOT`
-  for a local snapshot build)
+- All artifacts share the same version number
 - All artifacts are released together as one `service-common` library set
 - Changes to any artifact trigger one service-common version bump
 - Consuming services upgrade the platform and runtime library artifacts by
@@ -284,8 +283,7 @@ The main-branch snapshot workflow is
 
 Normal snapshot usage is:
 
-1. Keep `build.gradle.kts` on the active development version, for example
-   `0.0.9-SNAPSHOT`.
+1. Keep `build.gradle.kts` on the active development snapshot version.
 2. Merge changes to `main`.
 3. Let GitHub Actions refresh the published snapshot coordinate in GitHub
    Packages.
@@ -309,8 +307,7 @@ The tag-driven release workflow is
 
 Normal release usage is:
 
-1. Merge the PR that sets `build.gradle.kts` to the release version on `main`
-   (for example, `0.0.8`).
+1. Merge the PR that sets `build.gradle.kts` to the release version on `main`.
 2. Create the matching tag from that merged `main` commit.
 3. Push the tag so GitHub Actions publishes the release.
 

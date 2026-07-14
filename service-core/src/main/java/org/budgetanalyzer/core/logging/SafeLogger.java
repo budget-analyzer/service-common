@@ -35,8 +35,9 @@ public class SafeLogger {
   /**
    * Converts object to JSON string with sensitive fields masked.
    *
-   * @param object the object to serialize to JSON
-   * @return JSON string representation with sensitive fields masked
+   * @param object the object to serialize to JSON; may be null
+   * @return JSON string representation with sensitive fields masked, or the JSON literal {@code
+   *     null} when the input is null
    */
   public static String toJson(Object object) {
     try {
@@ -50,9 +51,9 @@ public class SafeLogger {
   /**
    * Masks a sensitive string value.
    *
-   * @param value The value to mask
-   * @param showLast Number of characters to show at the end (0 or negative = completely mask)
-   * @return Masked value
+   * @param value the value to mask; may be null
+   * @param showLast number of characters to show at the end (0 or negative = completely mask)
+   * @return masked value, or null when the input value is null
    */
   public static String mask(String value, int showLast) {
     if (value == null || value.isEmpty()) {
@@ -75,8 +76,8 @@ public class SafeLogger {
   /**
    * Completely masks a sensitive value.
    *
-   * @param value the value to mask
-   * @return completely masked value
+   * @param value the value to mask; may be null
+   * @return completely masked value, or null when the input value is null
    */
   public static String mask(String value) {
     return mask(value, 0);

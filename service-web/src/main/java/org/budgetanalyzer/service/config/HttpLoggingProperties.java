@@ -3,7 +3,10 @@ package org.budgetanalyzer.service.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.validation.constraints.NotNull;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Configuration properties for HTTP request/response logging.
@@ -33,6 +36,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       #   - my_custom_param
  * </pre>
  */
+@Validated
 @ConfigurationProperties(prefix = "budgetanalyzer.service.http-logging")
 public class HttpLoggingProperties {
 
@@ -40,7 +44,7 @@ public class HttpLoggingProperties {
   private boolean enabled = false;
 
   /** Log level for HTTP logging (DEBUG, INFO, WARN, ERROR). */
-  private String logLevel = "DEBUG";
+  @NotNull private String logLevel = "DEBUG";
 
   /** Include request body in logs. Defaults to false for safer opt-in behavior. */
   private boolean includeRequestBody = false;
@@ -70,16 +74,18 @@ public class HttpLoggingProperties {
    * URL patterns to exclude from logging (Ant-style patterns). Default includes actuator and
    * swagger endpoints.
    */
+  @NotNull
   private List<String> excludePatterns =
       new ArrayList<>(List.of("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"));
 
   /** URL patterns to explicitly include (overrides excludePatterns). */
-  private List<String> includePatterns = new ArrayList<>();
+  @NotNull private List<String> includePatterns = new ArrayList<>();
 
   /**
    * Header names to redact/mask in logs (case-insensitive). Default includes common sensitive
    * headers.
    */
+  @NotNull
   private List<String> sensitiveHeaders =
       List.of(
           "Authorization",
@@ -95,7 +101,7 @@ public class HttpLoggingProperties {
    * Matching uses the same normalization as body field sanitization: strip non-alphanumeric
    * characters and lowercase before comparison.
    */
-  private List<String> sensitiveQueryParams = new ArrayList<>();
+  @NotNull private List<String> sensitiveQueryParams = new ArrayList<>();
 
   /** Log only requests that result in errors (4xx, 5xx status codes). */
   private boolean logErrorsOnly = false;
@@ -107,6 +113,7 @@ public class HttpLoggingProperties {
    * User-Agent prefixes that identify health check requests (case-insensitive prefix match).
    * Default includes Kubernetes probes, AWS ELB, and GCP health checkers.
    */
+  @NotNull
   private List<String> healthCheckUserAgentPrefixes =
       List.of("kube-probe", "ELB-HealthChecker", "GoogleHC");
 
