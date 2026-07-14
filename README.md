@@ -80,8 +80,7 @@ Service Common promotes code reuse and consistency across microservices by:
 For local development, publish these artifacts to Maven Local and consume them from sibling
 Budget Analyzer services. CI workflows publish snapshot and release artifacts to GitHub Packages.
 Examples below use `<service-common-version>` as a placeholder. Use the checked-in version literal
-from `build.gradle.kts` for the build you are consuming (for example, `0.0.1-SNAPSHOT` during local
-snapshot development).
+from `build.gradle.kts` for the build you are consuming.
 
 ### Which Module Should I Use?
 
@@ -144,8 +143,6 @@ When service-core is on your classpath, you automatically get:
 - **JPA Entity Scanning** - Base entities (AuditableEntity, SoftDeletableEntity) automatically discovered
 - **JPA Auditing** - Automatic timestamps (createdAt, updatedAt) on entities
 - **CSV Parser Bean** - OpenCsvParser available for injection
-  - `CsvRow` requires a non-null values map through both `CsvRow.of(...)` and the record
-    constructor
 - **Prometheus Metrics** - `/actuator/prometheus` endpoint exposed automatically for scraping
 - **`application` Common Tag** - Every Micrometer meter is tagged with `application=${spring.application.name}` so metrics carry service identity independent of the scrape pipeline (override with `management.metrics.tags.application`)
 
@@ -156,8 +153,6 @@ When service-web is on your classpath, you automatically get:
 - **Claims Header Security** - Automatic stateless authentication from trusted ingress external-auth headers
   - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers for both servlet and reactive services
   - Public endpoints: health, prometheus, and OpenAPI routes; all other endpoints, including `/internal/**`, require service-owned rules or authenticated claims headers
-  - Manual token construction must use `ClaimsHeaderAuthenticationToken.authenticated(...)`; the
-    direct constructor is private
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests and regenerates malformed inbound values before they reach logs or response headers
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
   - Text bodies only: common secret fields in JSON and form payloads are redacted
@@ -232,26 +227,6 @@ the release and publishing contract.
 
 `service-common`'s own version and backwards-compatibility contract lives in
 [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
-
-### 0.0.15 Null Contract Compatibility Notes
-
-Version `0.0.15` enforces the Stage 2 null contracts introduced during the `0.0.14` migration
-window. This is a breaking release for callers that still use permissive construction paths:
-
-- `ApiErrorResponse` builders reject missing `type` and `message` at build time.
-- `FieldError.of(...)` now enforces non-null `field` and `message`; `rejectedValue` remains
-  nullable.
-- `ClaimsHeaderAuthenticationToken` can only be created through
-  `ClaimsHeaderAuthenticationToken.authenticated(...)`.
-- `CsvRow` requires a non-null values map through the canonical record constructor and
-  `CsvRow.of(...)`.
-
-Before adopting `0.0.15`, update consumers to the strict APIs and search for old construction
-patterns:
-
-```bash
-rg -n "ApiErrorResponse\.builder\(\)|FieldError\.of|new ClaimsHeaderAuthenticationToken|new CsvRow" src test docs
-```
 
 ## Development
 

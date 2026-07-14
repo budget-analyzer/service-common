@@ -213,11 +213,6 @@ public class TransactionService {
 
 ### 6. Null Safety
 
-Follow the canonical
-[Null Handling and Validation Contracts](code-quality-standards.md#null-handling-and-validation-contracts).
-The examples below cover nullable return values; they do not require annotations or repeated null
-guards on ordinary service parameters.
-
 **Use Optional for potentially null returns**:
 
 ```java
@@ -501,8 +496,6 @@ log.info("State: {}", SafeLogger.truncateId(state, 6));          // "a1b2c3…"
   `secret`, `token`, `apikey`, etc.) are redacted automatically
 - **Query parameter sanitization** — OAuth2 and credential-related query params (`code`, `state`,
   `token`, `password`, `secret`, etc.) are redacted automatically
-- **Configuration validation** — `log-level` and the HTTP logging list settings are required to bind
-  as non-null values. Empty lists are valid; explicit null values fail startup.
 
 **What is NOT automatic** — you must handle explicitly:
 - Identifiers logged in application code (session IDs, user IDs, OAuth2 state values)

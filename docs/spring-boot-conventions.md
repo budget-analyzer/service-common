@@ -531,11 +531,6 @@ cat src/main/java/org/budgetanalyzer/transaction/api/TransactionController.java
 
 **CRITICAL**: Services must NOT import from the API package (`*.api.request` or `*.api.response`).
 
-Null handling and validation contracts follow
-[Null Handling and Validation Contracts](code-quality-standards.md#null-handling-and-validation-contracts).
-In particular, validate request shape at the API boundary, enforce business invariants in the
-service layer, and do not add unenforced Jakarta constraints to ordinary service method parameters.
-
 ### Why This Matters
 - **Layer isolation**: Service layer should be independent of HTTP/API concerns
 - **Testability**: Services can be tested without API layer dependencies

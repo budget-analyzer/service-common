@@ -50,10 +50,8 @@ For batch validation, use `FieldError.forIndexedField(index, field, message, rej
 `rejectedValue` may be null because null is often the rejected input. Optional response fields such
 as `code` and `fieldErrors` remain optional.
 
-Starting in service-common `0.0.15`, the permissive migration behavior is gone:
-`ApiErrorResponse` rejects missing `type` and `message` at build time, and `FieldError.of(...)`
-enforces the same non-null `field` and `message` contract as `FieldError.forField(...)` and
-`FieldError.forIndexedField(...)`.
+`ApiErrorResponse` rejects missing `type` and `message` at build time. All `FieldError` factories
+require `field` and `message`.
 
 ## Error Types
 

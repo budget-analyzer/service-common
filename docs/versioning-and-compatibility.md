@@ -7,8 +7,7 @@
 ## Multi-Module Versioning
 
 **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** are versioned **together as a coordinated set**:
-- All artifacts share the same version number (for example, `0.0.1-SNAPSHOT`
-  for a local snapshot build)
+- All artifacts share the same version number
 - All artifacts are released together as one `service-common` library set
 - Changes to any artifact trigger one service-common version bump
 - Consuming services upgrade the platform and runtime library artifacts by
@@ -284,8 +283,7 @@ The main-branch snapshot workflow is
 
 Normal snapshot usage is:
 
-1. Keep `build.gradle.kts` on the active development version, for example
-   `0.0.9-SNAPSHOT`.
+1. Keep `build.gradle.kts` on the active development snapshot version.
 2. Merge changes to `main`.
 3. Let GitHub Actions refresh the published snapshot coordinate in GitHub
    Packages.
@@ -309,8 +307,7 @@ The tag-driven release workflow is
 
 Normal release usage is:
 
-1. Merge the PR that sets `build.gradle.kts` to the release version on `main`
-   (for example, `0.0.8`).
+1. Merge the PR that sets `build.gradle.kts` to the release version on `main`.
 2. Create the matching tag from that merged `main` commit.
 3. Push the tag so GitHub Actions publishes the release.
 
@@ -602,43 +599,6 @@ Before bumping service-common version:
 - [ ] All service teams notified
 - [ ] Tests pass across all services with changes
 - [ ] Documentation comprehensively updated
-
-## 0.0.15 Null Contract Enforcement Notes
-
-Version `0.0.15` is a coordinated lockstep release that enforces the Stage 2 null contracts
-introduced in `0.0.14`. It is not backwards compatible with callers that still rely on permissive
-construction of invalid error contracts, authenticated claims tokens, or CSV rows.
-
-Breaking changes:
-
-- `ApiErrorResponse.builder()` has been removed. Use
-  `ApiErrorResponse.builder(ApiErrorType, String)`. The builder also validates required `type` and
-  `message` at `build()` time so setters cannot clear those fields to null.
-- `FieldError.of(...)` is no longer permissive. It enforces non-null `field` and `message`, matching
-  `FieldError.forField(...)` and `FieldError.forIndexedField(...)`. `rejectedValue` remains
-  nullable.
-- `ClaimsHeaderAuthenticationToken` no longer exposes a public constructor. Use
-  `ClaimsHeaderAuthenticationToken.authenticated(userId, roles, authorities)`.
-- `CsvRow` now requires a non-null values map through both `CsvRow.of(...)` and the canonical record
-  constructor.
-
-Migration checklist for consumers:
-
-- Replace any no-argument `ApiErrorResponse.builder()` call with
-  `ApiErrorResponse.builder(type, message)`.
-- Ensure no builder setter later passes null for `type` or `message`.
-- Prefer `FieldError.forField(...)` and `FieldError.forIndexedField(...)`; if `FieldError.of(...)`
-  remains, ensure `field` and `message` are non-null.
-- Replace `new ClaimsHeaderAuthenticationToken(...)` with
-  `ClaimsHeaderAuthenticationToken.authenticated(...)`.
-- Ensure every `new CsvRow(...)` call passes a non-null values map, or use `CsvRow.of(...)`.
-
-Validation search:
-
-```bash
-rg -n "ApiErrorResponse\.builder\(\)|FieldError\.of|new ClaimsHeaderAuthenticationToken|new CsvRow" \
-  src test docs
-```
 
 ## Communication and Coordination
 

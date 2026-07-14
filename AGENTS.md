@@ -74,6 +74,10 @@ Do not leave documentation updates as follow-up work.
 
 Prefer pattern-based guidance, discovery commands, and local source references over maintained inventories.
 
+Keep canonical documentation version-agnostic. Put release-specific migration guidance in
+`docs/plans/`, and define cross-cutting rules in one canonical document instead of repeating or
+continually cross-linking them across coding guides.
+
 The quick references and current entry-point lists in this file are orientation aids, not exhaustive source-of-truth lists. Where specific class names appear, treat them as representative current hooks and verify state with the adjacent `Discovery` blocks or linked local docs before relying on completeness.
 
 Do not use GitHub-web links or `@file` imports here. Use relative markdown links or plain-text paths so details stay on-demand.
@@ -207,8 +211,7 @@ dependencies {
 ```
 
 Use the checked-in version literal from `build.gradle.kts` when consuming the
-published artifacts. `0.0.1-SNAPSHOT` is only an example of a local snapshot
-version.
+published artifacts.
 
 **Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA). Platform artifacts manage versions only; consuming services must still declare the libraries they use.
 
@@ -482,11 +485,6 @@ budgetanalyzer:
       max-body-size: 10000         # Optional: values <= 0 disable body capture
 ```
 
-`log-level`, `exclude-patterns`, `include-patterns`, `sensitive-headers`,
-`sensitive-query-params`, and `health-check-user-agent-prefixes` are validated
-as non-null when bound. Omit them to use defaults, or configure an empty list
-when no entries are desired; explicit null values fail startup.
-
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
 - Abstract base class for service-specific OpenAPI configuration
 - Automatically provides: Standard error response schemas (400/404/500/503)
@@ -575,8 +573,7 @@ All code must be production-ready. No shortcuts, prototypes, or workarounds.
 **Why**: The cost of abstraction is bounded (one interface, one translation layer). The cost of provider migration without abstraction is unbounded (every table, every service, every log).
 
 ### Standardized Error Responses
-All API errors follow `ApiErrorResponse` format with non-null `type` and `message`, field-level
-validation, and error codes.
+All API errors follow `ApiErrorResponse` format with error types, field-level validation, and error codes.
 
 ### Soft Delete Pattern
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
