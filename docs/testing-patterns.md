@@ -326,47 +326,46 @@ static void configureRedis(DynamicPropertyRegistry registry) {
 }
 ```
 
-## Mocking Strategies
+## Testing Internal Dependencies
 
-### Use Mockito for Dependencies
+Use real internal components and assert on observable behavior. When a service
+persists data, run it against a real database with Testcontainers instead of
+mocking the repository or verifying method calls.
 
 ```java
-@ExtendWith(MockitoExtension.class)
-class TransactionServiceTest {
+@SpringBootTest
+@Testcontainers
+class TransactionServiceIntegrationTest {
 
-    @Mock
-    private TransactionRepository transactionRepository;
+    @Container
+    static PostgreSQLContainer<?> postgresqlContainer =
+        new PostgreSQLContainer<>("postgres:15-alpine");
 
-    @Mock
-    private AuditService auditService;
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
+        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
+    }
 
-    @InjectMocks
+    @Autowired
     private TransactionService transactionService;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Test
     void shouldCreateTransaction() {
         var transaction = new Transaction();
-        when(transactionRepository.save(any())).thenReturn(transaction);
+        transaction.setAmount(new BigDecimal("100.00"));
 
-        var result = transactionService.create(transaction);
+        var created = transactionService.create(transaction);
 
-        verify(transactionRepository).save(transaction);
-        verify(auditService).logCreation(transaction);
+        var persisted = transactionRepository.findById(created.getId());
+        assertThat(persisted).isPresent();
+        assertThat(persisted.orElseThrow().getAmount())
+            .isEqualByComparingTo(new BigDecimal("100.00"));
     }
-}
-```
-
-### ArgumentCaptor for Complex Verification
-
-```java
-@Test
-void shouldSaveTransactionWithCorrectTimestamp() {
-    ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
-
-    transactionService.create(transaction);
-
-    verify(repository).save(captor.capture());
-    assertThat(captor.getValue().getCreatedAt()).isNotNull();
 }
 ```
 
