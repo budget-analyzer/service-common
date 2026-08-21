@@ -235,6 +235,7 @@ class TransactionTotalCalculatorTest {
 ```java
 @SpringBootTest
 @Testcontainers
+@Transactional
 class TransactionRepositoryIntegrationTest {
 
     @Container
@@ -249,13 +250,18 @@ class TransactionRepositoryIntegrationTest {
         transaction.setAmount(new BigDecimal("100.00"));
 
         var saved = transactionRepository.save(transaction);
-        transactionRepository.delete(saved);
+        saved.markDeleted(TestConstants.USER_ID);
+        transactionRepository.save(saved);
 
-        assertThat(transactionRepository.findByIdActive(saved.getId())).isEmpty();
+        assertThat(transactionRepository.findByIdNotDeleted(saved.getId())).isEmpty();
         assertThat(transactionRepository.findById(saved.getId())).isPresent();
     }
 }
 ```
+
+The test transaction rolls back after each test, so soft-deletable rows are isolated without
+calling repository deletion methods. Exercise application deletion through `markDeleted`, then
+save the entity and query through `SoftDeleteOperations` when asserting active-record behavior.
 
 ### Controller Tests
 
@@ -275,6 +281,7 @@ class TransactionRepositoryIntegrationTest {
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Transactional
 class TransactionControllerIntegrationTest {
 
     @Container
@@ -293,11 +300,6 @@ class TransactionControllerIntegrationTest {
 
     @Autowired
     private TransactionRepository transactionRepository;
-
-    @BeforeEach
-    void clearTransactions() {
-        transactionRepository.deleteAll();
-    }
 
     @Test
     void shouldReturnTransactionById() throws Exception {
@@ -344,7 +346,9 @@ class TransactionControllerIntegrationTest {
 replacing the controller's application dependencies. For 201 Created responses, always verify both
 the Location header and the response body. See
 [spring-boot-conventions.md](spring-boot-conventions.md#201-created-with-location-header) for the
-controller implementation pattern.
+controller implementation pattern. The test transaction also rolls back repository changes after
+each test; do not clean up `SoftDeletableEntity` rows with `deleteAll()` or another repository
+deletion method.
 
 ## Testcontainers
 
@@ -880,16 +884,20 @@ class TransactionEventIntegrationTest {
 ```java
 @Test
 void shouldSoftDeleteTransaction() {
-    var transaction = repository.save(new Transaction());
+    var transaction = transactionRepository.save(new Transaction());
 
-    repository.delete(transaction);
+    transaction.markDeleted(TestConstants.USER_ID);
+    transactionRepository.save(transaction);
 
     // Should not be in active records
-    assertThat(repository.findByIdActive(transaction.getId())).isEmpty();
+    assertThat(transactionRepository.findByIdNotDeleted(transaction.getId())).isEmpty();
 
     // But should still exist in database
-    assertThat(repository.findById(transaction.getId())).isPresent();
-    assertThat(repository.findById(transaction.getId()).get().isDeleted()).isTrue();
+    assertThat(transactionRepository.findById(transaction.getId()))
+        .isPresent()
+        .get()
+        .extracting(Transaction::isDeleted)
+        .isEqualTo(true);
 }
 ```
 
@@ -1123,12 +1131,19 @@ void shouldReturnCorrectResult() { }
 
 ### 3. Not Cleaning Up After Tests
 ```java
-@AfterEach
-void tearDown() {
-    repository.deleteAll();
-    MDC.clear();
+@SpringBootTest
+@Transactional
+class TransactionIntegrationTest {
+
+    @AfterEach
+    void clearThreadLocalState() {
+        MDC.clear();
+    }
 }
 ```
+
+The test transaction rolls database changes back automatically. This keeps tests isolated without
+hard-deleting soft-deletable entities. Clear non-transactional state such as MDC explicitly.
 
 ## Resources
 
