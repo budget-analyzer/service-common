@@ -24,7 +24,9 @@ This is a deliberate architectural choice for modern Spring Boot applications:
 
 4. **Clear transaction boundaries**: `@Transactional` at the service layer gives predictable, testable transaction behavior.
 
-5. **Testability**: Services are easy to unit test with mocked repositories. No complex entity lifecycle management in tests.
+5. **Testability**: Services have explicit boundaries and can be exercised with real application
+   collaborators. Use Spring integration tests and Testcontainers when behavior crosses
+   persistence boundaries.
 
 **Rules**:
 - Controllers never call repositories directly
@@ -894,9 +896,10 @@ grep -rA 10 "ResponseEntity.created" src/main/java/
 See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 
 **Quick reference**:
-- Unit tests: `*Test.java` (no Spring context)
-- Integration tests: `*IntegrationTest.java` (with `@SpringBootTest`)
-- Use TestContainers for database/Redis/RabbitMQ
+- Do not mock or spy application-owned Spring beans
+- Unit tests: `*Test.java` with real objects or concrete test implementations (no Spring context)
+- Integration tests: `*IntegrationTest.java` with real application beans (`@SpringBootTest`)
+- Use Testcontainers for database/Redis/RabbitMQ and WireMock for external HTTP
 - Minimum 80% code coverage
 
 ## Documentation Standards

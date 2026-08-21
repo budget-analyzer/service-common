@@ -104,7 +104,7 @@ public class CurrencyService {
 ### Benefits
 
 - **Extensibility**: Add new providers without changing services
-- **Testability**: Mock provider interface for unit tests
+- **Testability**: Exercise the real provider bean against WireMock at the external HTTP boundary
 - **Substitutability**: Switch providers via configuration
 - **Encapsulation**: Provider-specific logic contained in implementation
 

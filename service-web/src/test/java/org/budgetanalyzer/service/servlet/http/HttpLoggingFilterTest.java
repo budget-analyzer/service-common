@@ -2,24 +2,23 @@ package org.budgetanalyzer.service.servlet.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -28,13 +27,11 @@ import ch.qos.logback.core.read.ListAppender;
 
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
-@ExtendWith(MockitoExtension.class)
 class HttpLoggingFilterTest {
-
-  @Mock private FilterChain filterChain;
 
   private HttpLoggingProperties httpLoggingProperties;
   private HttpLoggingFilter httpLoggingFilter;
+  private RecordingFilterChain recordingFilterChain;
 
   @BeforeEach
   void setUp() {
@@ -46,6 +43,7 @@ class HttpLoggingFilterTest {
     httpLoggingProperties.setMaxBodySize(10000);
 
     httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
+    recordingFilterChain = new RecordingFilterChain();
   }
 
   @Test
@@ -62,10 +60,10 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Should call filter chain without wrapping
-    verify(filterChain).doFilter(request, response);
+    assertThat(recordingFilterChain.getRequest()).isSameAs(request);
+    assertThat(recordingFilterChain.getResponse()).isSameAs(response);
   }
 
   @Test
@@ -80,10 +78,10 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Filter chain should be called
-    verify(filterChain).doFilter(any(), any());
+    assertThat(recordingFilterChain.getRequest()).isNotNull();
+    assertThat(recordingFilterChain.getResponse()).isNotNull();
   }
 
   @Test
@@ -100,10 +98,10 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Should skip logging and call filter chain with original request/response
-    verify(filterChain).doFilter(request, response);
+    assertThat(recordingFilterChain.getRequest()).isSameAs(request);
+    assertThat(recordingFilterChain.getResponse()).isSameAs(response);
   }
 
   @Test
@@ -125,15 +123,18 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act - Test included path
-    httpLoggingFilter.doFilterInternal(includedRequest, response, filterChain);
-    verify(filterChain).doFilter(any(), any()); // Should wrap and log
+    httpLoggingFilter.doFilterInternal(includedRequest, response, recordingFilterChain);
+    assertThat(recordingFilterChain.getRequest()).isInstanceOf(ContentCachingRequestWrapper.class);
+    assertThat(recordingFilterChain.getResponse())
+        .isInstanceOf(ContentCachingResponseWrapper.class);
 
-    reset(filterChain);
+    recordingFilterChain = new RecordingFilterChain();
 
     // Act - Test excluded path
     var excludedResponse = new MockHttpServletResponse();
-    httpLoggingFilter.doFilterInternal(excludedRequest, excludedResponse, filterChain);
-    verify(filterChain).doFilter(eq(excludedRequest), eq(excludedResponse)); // Should skip logging
+    httpLoggingFilter.doFilterInternal(excludedRequest, excludedResponse, recordingFilterChain);
+    assertThat(recordingFilterChain.getRequest()).isSameAs(excludedRequest);
+    assertThat(recordingFilterChain.getResponse()).isSameAs(excludedResponse);
   }
 
   @Test
@@ -151,10 +152,10 @@ class HttpLoggingFilterTest {
     response.setStatus(200); // Success status
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Should still call filter chain
-    verify(filterChain).doFilter(any(), any());
+    assertThat(recordingFilterChain.getRequest()).isNotNull();
+    assertThat(recordingFilterChain.getResponse()).isNotNull();
     // Response logging should be skipped (tested via manual verification of logs)
   }
 
@@ -195,10 +196,10 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Should complete without errors (body not logged for GET)
-    verify(filterChain).doFilter(any(), any());
+    assertThat(recordingFilterChain.getRequest()).isNotNull();
+    assertThat(recordingFilterChain.getResponse()).isNotNull();
   }
 
   @Test
@@ -212,11 +213,12 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act - Should not throw even if internal logging fails
-    assertThatCode(() -> httpLoggingFilter.doFilterInternal(request, response, filterChain))
+    assertThatCode(
+            () -> httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain))
         .doesNotThrowAnyException();
 
-    // Assert
-    verify(filterChain).doFilter(any(), any());
+    assertThat(recordingFilterChain.getRequest()).isNotNull();
+    assertThat(recordingFilterChain.getResponse()).isNotNull();
   }
 
   @Test
@@ -268,7 +270,7 @@ class HttpLoggingFilterTest {
       var response = new MockHttpServletResponse();
 
       // Act
-      httpLoggingFilter.doFilterInternal(request, response, filterChain);
+      httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
       // Assert
       var logOutput =
@@ -310,7 +312,7 @@ class HttpLoggingFilterTest {
       var response = new MockHttpServletResponse();
 
       // Act
-      httpLoggingFilter.doFilterInternal(request, response, filterChain);
+      httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
       // Assert
       var logOutput =
@@ -345,9 +347,30 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    httpLoggingFilter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, recordingFilterChain);
 
-    // Assert - Should skip logging (excluded path)
-    verify(filterChain).doFilter(request, response);
+    assertThat(recordingFilterChain.getRequest()).isSameAs(request);
+    assertThat(recordingFilterChain.getResponse()).isSameAs(response);
+  }
+
+  private static final class RecordingFilterChain implements FilterChain {
+
+    private ServletRequest request;
+    private ServletResponse response;
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response)
+        throws IOException, ServletException {
+      this.request = request;
+      this.response = response;
+    }
+
+    private ServletRequest getRequest() {
+      return request;
+    }
+
+    private ServletResponse getResponse() {
+      return response;
+    }
   }
 }
