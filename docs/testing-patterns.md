@@ -86,35 +86,70 @@ public class TestSecurityConfig {
 
 ### Core Principle: Test Behavior, Not Implementation
 
-This codebase uses a layered testing strategy that prioritizes real integration over mocked abstractions. Tests should give us confidence to refactor and upgrade dependencies independently.
+This codebase uses a layered testing strategy that prioritizes observable behavior through real
+objects and real application components. Tests should give us confidence to refactor and upgrade
+dependencies independently.
 
 ### Testing Layers
 
-#### 1. API Contract Tests (Primary Confidence Layer)
+#### 1. Pure Logic
+
+- Construct the class and its value objects directly
+- Use real collaborators when they are deterministic and in memory
+- Use a small concrete test implementation or fake for a framework callback that has no practical
+  real implementation in a plain unit test
+- Do not load a Spring context
+
+#### 2. Application Behavior
+
+- Load the real Spring beans involved in the behavior
+- Test controllers, services, repositories, providers, listeners, and schedulers together through
+  observable results
+- Do not replace or spy on application-owned beans to verify interactions
+
+#### 3. Persistence and Brokers (Testcontainers)
+
+- Run PostgreSQL, RabbitMQ, Redis, and similar infrastructure with Testcontainers
+- Verify application mappings, queries, transactions, messages, and configuration against the real
+  infrastructure
+- Do not substitute repository or messaging beans with Mockito behavior
+
+#### 4. External HTTP (WireMock)
+
+- Run the real application provider and HTTP client beans
+- Use WireMock as the controlled third-party HTTP server
+- Stub external responses and assert the application result or error contract
+
+#### 5. API Contract Tests (Primary Confidence Layer)
+
 - Black-box tests against the actual HTTP API
 - Run in CI/CD against deployed services
 - Test the contract, not the framework
 - **Benefit**: Swap Spring Boot for anything else - if API tests pass, you're good
 
-#### 2. Infrastructure Integration Tests (Testcontainers)
-- Test each infrastructure boundary: database, messaging, caching, external APIs
-- Use real dependencies via testcontainers (Postgres, RabbitMQ, Redis, etc.)
-- Verify YOUR configuration works, not that Spring works
-- **Example**: Test that your retry logic + DLQ routing works, not that RabbitMQ has a DLQ
-
-#### 3. Unit Tests (Business Logic Only)
-- Pure functions and domain logic
-- No framework dependencies
-- If it's simple CRUD with no business rules, skip the test
-
 ### What We Don't Test
 
-#### No Mocks of Internal Components
-**Hard rule**: No `@MockBean`, no Mockito on repositories/services/controllers.
+#### Keep Application-Owned Spring Beans Real
 
-**Why**: Mocks drift from reality, create false confidence, and couple tests to implementation details. When you upgrade Spring Boot, you shouldn't have to rewrite test infrastructure.
+**Rule**: Do not mock or spy application-owned Spring beans. Test them together using real
+application components, with Testcontainers or WireMock where infrastructure or external HTTP is
+involved. In plain unit tests, use real objects or concrete test implementations for framework
+interfaces.
 
-**Exception**: External system boundaries (third-party APIs via WireMock, time via `Clock` injection). Mock things you don't control, not things you wrote.
+Application-owned beans include controllers, services, repositories, providers, clients,
+listeners, and schedulers. Do not replace them with Mockito `@Mock`, `@MockBean`, or
+`@MockitoBean`, and do not wrap them with Mockito `@Spy`, `@SpyBean`, or `@MockitoSpyBean`.
+Interaction-heavy tests drift from real wiring and couple the suite to implementation details.
+
+This is not a wholesale dependency ban. `MockMvc` is Spring's HTTP test client; it does not replace
+application beans. Spring classes such as `MockHttpServletRequest`, WireMock, and Testcontainers
+are also valid test tools despite names that contain "mock." A `MockMvc` test follows the rule when
+it loads the real application components required by the endpoint. The prohibited pattern is
+using Mockito-backed bean overrides behind that client.
+
+For deterministic time, inject a real fixed `Clock`. When a plain unit test needs a framework
+callback, use a lambda, recording test implementation, or focused fake and assert observable state.
+Do not build a generic in-house mocking framework.
 
 #### No Framework Verification Tests
 Don't test that Spring does what Spring says it does:
@@ -128,9 +163,10 @@ Don't test that Spring does what Spring says it does:
 
 1. Write API test for the contract
 2. Implement feature
-3. Add testcontainers integration test if touching infrastructure
-4. Add unit test if complex business logic exists
-5. Run tests - they should fail for the right reasons (your bug, not Spring's)
+3. Add a Testcontainers integration test when behavior touches persistence or a broker
+4. Add a WireMock integration test when behavior touches external HTTP
+5. Add a plain unit test when complex pure logic exists
+6. Run tests - they should fail for the right reasons (your bug, not Spring's)
 
 ### Upgrade Strategy
 
@@ -141,7 +177,9 @@ When upgrading Spring Boot:
 
 This separation lets you validate the upgrade without rewriting the entire test suite.
 
-> Simple code doesn't need tests proving it's simple. Complex infrastructure needs real integration tests, not mocked fantasies. The API contract is the only promise that matters.
+> Simple code does not need tests proving it is simple. Infrastructure behavior needs real
+> integration tests, and application behavior needs real application components. The API contract
+> is the only promise that matters.
 
 ## Test Types
 
@@ -160,16 +198,17 @@ This separation lets you validate the upgrade without rewriting the entire test 
 - Fast execution (milliseconds)
 - No external dependencies
 - No Spring context loading
-- Uses mocks for dependencies
+- Uses real objects and deterministic in-memory collaborators
+- Uses concrete test implementations or fakes only for necessary framework interfaces
 
 **Example**:
 ```java
-class TransactionServiceTest {
+class TransactionTotalCalculatorTest {
 
     @Test
     void shouldCalculateTotalAmount() {
-        var service = new TransactionService();
-        var result = service.calculateTotal(transactions);
+        var transactionTotalCalculator = new TransactionTotalCalculator();
+        var result = transactionTotalCalculator.calculate(transactions);
         assertThat(result).isEqualByComparingTo(new BigDecimal("150.00"));
     }
 }
@@ -190,104 +229,128 @@ class TransactionServiceTest {
 - Slower execution (seconds)
 - Tests multiple components together
 - Loads Spring context
-- Uses TestContainers for real database/Redis/RabbitMQ
+- Uses Testcontainers for real database/Redis/RabbitMQ
 
 **Example**:
 ```java
 @SpringBootTest
 @Testcontainers
+@Transactional
 class TransactionRepositoryIntegrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
-    private TransactionRepository repository;
+    private TransactionRepository transactionRepository;
 
     @Test
-    void shouldSaveAndRetrieveTransaction() {
+    void shouldExcludeSoftDeletedTransactionFromActiveLookup() {
         var transaction = new Transaction();
         transaction.setAmount(new BigDecimal("100.00"));
 
-        var saved = repository.save(transaction);
-        var retrieved = repository.findByIdActive(saved.getId());
+        var saved = transactionRepository.save(transaction);
+        saved.markDeleted(TestConstants.USER_ID);
+        transactionRepository.save(saved);
 
-        assertThat(retrieved).isPresent();
-        assertThat(retrieved.get().getId()).isEqualTo(saved.getId());
+        assertThat(transactionRepository.findByIdNotDeleted(saved.getId())).isEmpty();
+        assertThat(transactionRepository.findById(saved.getId())).isPresent();
     }
 }
 ```
 
+The test transaction rolls back after each test, so soft-deletable rows are isolated without
+calling repository deletion methods. Exercise application deletion through `markDeleted`, then
+save the entity and query through `SoftDeleteOperations` when asserting active-record behavior.
+
 ### Controller Tests
 
-**File Pattern**: `*ControllerTest.java`
+**File Pattern**: `*ControllerIntegrationTest.java`
 **Location**: `src/test/java` (mirror of `src/main/java`)
-**Framework**: JUnit 5 + MockMvc + AssertJ
-**Spring Context**: Partial (Web Layer only)
+**Framework**: JUnit 5 + Spring Boot Test + MockMvc + AssertJ
+**Spring Context**: Yes
 
 **Characteristics**:
-- Tests HTTP layer only
-- Uses `@WebMvcTest` for faster execution
-- Mocks service dependencies
-- Validates request/response format
+- Sends HTTP requests through `MockMvc`
+- Loads the real controller, service, repository, validation, security, and exception-handling beans
+- Uses Testcontainers when the endpoint reaches persistence or a broker
+- Validates the request, response, and application behavior without Mockito bean replacement
 
 **Example**:
 ```java
-@WebMvcTest(TransactionController.class)
-class TransactionControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@Testcontainers
+@Transactional
+class TransactionControllerIntegrationTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgresqlContainer =
+        new PostgreSQLContainer<>("postgres:15-alpine");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
+        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
+    }
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private TransactionService transactionService;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Test
     void shouldReturnTransactionById() throws Exception {
         var transaction = new Transaction();
-        transaction.setId(1L);
         transaction.setAmount(new BigDecimal("100.00"));
+        var saved = transactionRepository.save(transaction);
 
-        when(transactionService.findById(1L)).thenReturn(Optional.of(transaction));
-
-        mockMvc.perform(get("/api/v1/transactions/1"))
+        mockMvc.perform(get("/api/v1/transactions/{id}", saved.getId())
+                .header("X-User-Id", TestConstants.USER_ID)
+                .header("X-Permissions", TestConstants.PERMISSION_TRANSACTIONS_READ))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.id").value(saved.getId()))
             .andExpect(jsonPath("$.amount").value(100.00));
     }
 
     @Test
     void shouldReturn404WhenTransactionNotFound() throws Exception {
-        when(transactionService.findById(999L)).thenReturn(Optional.empty());
-
-        mockMvc.perform(get("/api/v1/transactions/999"))
+        mockMvc.perform(get("/api/v1/transactions/999")
+                .header("X-User-Id", TestConstants.USER_ID)
+                .header("X-Permissions", TestConstants.PERMISSION_TRANSACTIONS_READ))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.type").value("NOT_FOUND"));
     }
 
     @Test
     void shouldReturn201WithLocationHeaderWhenCreated() throws Exception {
-        var transaction = new Transaction();
-        transaction.setId(42L);
-        transaction.setAmount(new BigDecimal("100.00"));
-
-        when(transactionService.create(any())).thenReturn(transaction);
-
         mockMvc.perform(post("/api/v1/transactions")
+                .header("X-User-Id", TestConstants.USER_ID)
+                .header("X-Permissions", TestConstants.PERMISSION_TRANSACTIONS_WRITE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"amount\": 100.00}"))
             .andExpect(status().isCreated())
             .andExpect(header().exists("Location"))
-            .andExpect(header().string("Location", containsString("/api/v1/transactions/42")))
-            .andExpect(jsonPath("$.id").value(42))
+            .andExpect(header().string("Location", containsString("/api/v1/transactions/")))
+            .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.amount").value(100.00));
+
+        assertThat(transactionRepository.count()).isOne();
     }
 }
 ```
 
-**Note**: For testing 201 Created responses, always verify both the Location header and the response body. See [spring-boot-conventions.md](spring-boot-conventions.md#201-created-with-location-header) for the controller implementation pattern.
+`MockMvc` drives the Spring MVC request pipeline; it is not a Mockito mock and does not justify
+replacing the controller's application dependencies. For 201 Created responses, always verify both
+the Location header and the response body. See
+[spring-boot-conventions.md](spring-boot-conventions.md#201-created-with-location-header) for the
+controller implementation pattern. The test transaction also rolls back repository changes after
+each test; do not clean up `SoftDeletableEntity` rows with `deleteAll()` or another repository
+deletion method.
 
-## TestContainers
+## Testcontainers
 
 **Purpose**: Provide real infrastructure (database, Redis, RabbitMQ) for integration tests
 
@@ -328,9 +391,9 @@ static void configureRedis(DynamicPropertyRegistry registry) {
 
 ## Testing Internal Dependencies
 
-Use real internal components and assert on observable behavior. When a service
-persists data, run it against a real database with Testcontainers instead of
-mocking the repository or verifying method calls.
+Use real application beans and assert on observable behavior. When a service persists data, run it
+against a real database with Testcontainers instead of replacing the repository or verifying
+method calls.
 
 ```java
 @SpringBootTest
@@ -368,6 +431,88 @@ class TransactionServiceIntegrationTest {
     }
 }
 ```
+
+## Testing External HTTP Boundaries
+
+Run the real provider and HTTP client against WireMock. Stub only the third-party HTTP contract;
+do not replace the application-owned provider or client bean. Prefer `@SpringBootTest` when Spring
+configuration or bean wiring is part of the behavior.
+
+```java
+@SpringBootTest
+class ExchangeRateProviderIntegrationTest {
+
+    private static final WireMockServer wireMockServer = startWireMockServer();
+
+    private static WireMockServer startWireMockServer() {
+        var wireMockServer = new WireMockServer(wireMockConfig().dynamicPort());
+        wireMockServer.start();
+
+        return wireMockServer;
+    }
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("exchange-rates.base-url", wireMockServer::baseUrl);
+    }
+
+    @AfterAll
+    static void stopWireMockServer() {
+        wireMockServer.stop();
+    }
+
+    @Autowired
+    private ExchangeRateProvider exchangeRateProvider;
+
+    @BeforeEach
+    void resetWireMockServer() {
+        wireMockServer.resetAll();
+    }
+
+    @Test
+    void shouldReturnRateFromExternalProviderResponse() {
+        wireMockServer.stubFor(get(urlEqualTo("/rates/USD/EUR"))
+            .willReturn(okJson("{\"rate\": 0.92}")));
+
+        var exchangeRate = exchangeRateProvider.getRate("USD", "EUR");
+
+        assertThat(exchangeRate).isEqualByComparingTo(new BigDecimal("0.92"));
+    }
+}
+```
+
+WireMock is a controlled HTTP server, not a replacement for an application bean. Assert primarily
+on the provider result or mapped error. Verify WireMock requests only when the outbound HTTP
+request itself is part of the contract.
+
+## Testing Framework Callbacks
+
+When plain unit tests exercise framework adapters, prefer concrete framework test objects, lambdas,
+or small recording implementations. For example, servlet filters can use Spring's
+`MockHttpServletRequest`, `MockHttpServletResponse`, and `MockFilterChain`; reactive filter chains
+can use a lambda that records observable state.
+
+```java
+@Test
+void shouldContinueReactiveFilterChain() {
+    var chainInvoked = new AtomicBoolean();
+    WebFilterChain recordingWebFilterChain = exchange -> {
+        chainInvoked.set(true);
+        return Mono.empty();
+    };
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/transactions").build());
+    var correlationIdFilter = new ReactiveCorrelationIdFilter();
+
+    StepVerifier.create(correlationIdFilter.filter(exchange, recordingWebFilterChain))
+        .verifyComplete();
+
+    assertThat(chainInvoked).isTrue();
+    assertThat(exchange.getResponse().getHeaders()).containsKey("X-Correlation-ID");
+}
+```
+
+Keep these test implementations specific to the framework contract under test. Do not recreate a
+general-purpose mocking library.
 
 ## Test Coverage Goals
 
@@ -531,6 +676,11 @@ public final class TestConstants {
     public static final String DESCRIPTION_TEST = "Test transaction";
     public static final String DESCRIPTION_EMPTY = "";
 
+    // Security claims
+    public static final String USER_ID = "usr_507f1f77bcf86cd799439011abcdef12";
+    public static final String PERMISSION_TRANSACTIONS_READ = "transactions:read";
+    public static final String PERMISSION_TRANSACTIONS_WRITE = "transactions:write";
+
     // Test IDs
     public static final Long ID_1 = 1L;
     public static final Long ID_NONEXISTENT = 999L;
@@ -689,16 +839,36 @@ void shouldCalculateTotalWithCorrectExchangeRates() {
     // Tests OUR business logic for currency conversion
 }
 
-// ✅ GOOD - Test integration behavior (not framework mechanism)
-@Test
-void shouldIncludeCorrectDataInPublishedEvent() {
-    var transaction = service.createTransaction(createRequest());
+// ✅ GOOD - Real application beans with observable published events
+@ApplicationModuleTest
+@Testcontainers
+class TransactionEventIntegrationTest {
 
-    // Capture the event that was published
-    var event = eventCaptor.getValue();
-    assertThat(event.getTransactionId()).isEqualTo(transaction.getId());
-    assertThat(event.getAmount()).isEqualTo(transaction.getAmount());
-    // Tests that OUR code publishes the right data, not that Modulith works
+    @Container
+    static PostgreSQLContainer<?> postgresqlContainer =
+        new PostgreSQLContainer<>("postgres:15-alpine");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
+        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
+    }
+
+    @Autowired
+    private TransactionService transactionService;
+
+    @Test
+    void shouldIncludeCorrectDataInPublishedEvent(PublishedEvents publishedEvents) {
+        var transaction = transactionService.createTransaction(createRequest());
+
+        assertThat(publishedEvents.ofType(TransactionCreatedEvent.class))
+            .singleElement()
+            .satisfies(event -> {
+                assertThat(event.getTransactionId()).isEqualTo(transaction.getId());
+                assertThat(event.getAmount()).isEqualTo(transaction.getAmount());
+            });
+    }
 }
 ```
 
@@ -714,16 +884,20 @@ void shouldIncludeCorrectDataInPublishedEvent() {
 ```java
 @Test
 void shouldSoftDeleteTransaction() {
-    var transaction = repository.save(new Transaction());
+    var transaction = transactionRepository.save(new Transaction());
 
-    repository.delete(transaction);
+    transaction.markDeleted(TestConstants.USER_ID);
+    transactionRepository.save(transaction);
 
     // Should not be in active records
-    assertThat(repository.findByIdActive(transaction.getId())).isEmpty();
+    assertThat(transactionRepository.findByIdNotDeleted(transaction.getId())).isEmpty();
 
     // But should still exist in database
-    assertThat(repository.findById(transaction.getId())).isPresent();
-    assertThat(repository.findById(transaction.getId()).get().isDeleted()).isTrue();
+    assertThat(transactionRepository.findById(transaction.getId()))
+        .isPresent()
+        .get()
+        .extracting(Transaction::isDeleted)
+        .isEqualTo(true);
 }
 ```
 
@@ -746,6 +920,11 @@ void shouldSoftDeleteTransaction() {
 These contracts are specified in the OpenAPI specification and form the programmatic API that clients depend on.
 
 ### Examples
+
+The `MockMvc` snippets below belong in the full-context controller setup described in
+[Controller Tests](#controller-tests). Use the service's real security test support and seed
+required state through real application components; those details are omitted here so the examples
+can focus on stable error fields.
 
 ```java
 // ✅ GOOD - Assert on stable contract fields
@@ -806,22 +985,22 @@ AssertJ's `.hasMessageContaining(...)` is the most common vector for this anti-p
 
 **Examples**
 
+These examples assume `transactionService` is a real Spring bean and the Testcontainers database
+contains no transaction with ID `999`. The intentionally bad examples demonstrate brittle message
+assertions; they do not replace any application bean.
+
 ```java
 // ✅ GOOD - Assert on exception type only
 @Test
 void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
-    when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> service.getById(999L))
+    assertThatThrownBy(() -> transactionService.getById(999L))
         .isInstanceOf(ResourceNotFoundException.class);
 }
 
 // ❌ BAD - hasMessageContaining couples the test to message wording
 @Test
 void badExample() {
-    when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> service.getById(999L))
+    assertThatThrownBy(() -> transactionService.getById(999L))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("999")           // ❌ message text is not contract
         .hasMessageContaining("not found");    // ❌ message text is not contract
@@ -830,7 +1009,7 @@ void badExample() {
 // ❌ BAD - Asserting on message text
 @Test
 void badExample() {
-    assertThatThrownBy(() -> service.getById(999L))
+    assertThatThrownBy(() -> transactionService.getById(999L))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("User not found: 999"); // ❌ message text is not contract
 }
@@ -844,8 +1023,6 @@ void badExample() {
 2. **Flexibility**: Teams can refine error messages without breaking tests
 3. **Contract focus**: Tests verify the programmatic contract, not human-readable text
 4. **OpenAPI alignment**: Error types and codes are documented in OpenAPI specs; messages are not
-
-See [AdminCurrencySeriesControllerTest.java](../../currency-service/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java) for real-world examples of this pattern.
 
 ## Performance Testing
 
@@ -874,10 +1051,11 @@ void shouldHandleLargeDataset() {
 src/test/java/
 └── org/budgetanalyzer/{service}/
     ├── controller/
-    │   └── TransactionControllerTest.java
+    │   └── TransactionControllerIntegrationTest.java
+    ├── domain/
+    │   └── TransactionTotalCalculatorTest.java
     ├── service/
-    │   └── TransactionServiceTest.java
-    │   └── TransactionServiceIntegrationTest.java
+    │   ├── TransactionServiceIntegrationTest.java
     │   └── provider/
     │       └── ExchangeRateProviderIntegrationTest.java
     ├── repository/
@@ -895,12 +1073,12 @@ src/test/java/
 
 ### Run Specific Test Class
 ```bash
-./gradlew test --tests TransactionServiceTest
+./gradlew test --tests TransactionTotalCalculatorTest
 ```
 
 ### Run Specific Test Method
 ```bash
-./gradlew test --tests TransactionServiceTest.shouldCreateTransaction
+./gradlew test --tests TransactionTotalCalculatorTest.shouldCalculateTotalAmount
 ```
 
 ### Run Tests with Coverage
@@ -912,6 +1090,22 @@ src/test/java/
 ```bash
 ./gradlew build -x test
 ```
+
+## Test Policy Discovery
+
+Use searches instead of maintaining an inventory of affected tests:
+
+```bash
+# Find Java tests that import Mockito APIs
+rg -n '^(import|import static) org\.mockito\.' --glob '*.java' .
+
+# Find Spring bean overrides backed by Mockito mocks or spies
+rg -n '@(MockBean|MockitoBean|SpyBean|MockitoSpyBean)' --glob '*.java' .
+```
+
+Read each match in context. Framework test objects such as `MockMvc` and
+`MockHttpServletRequest`, plus WireMock usage, are not matches for these searches and do not replace
+application-owned Spring beans.
 
 ## Common Testing Pitfalls
 
@@ -937,25 +1131,23 @@ void shouldReturnCorrectResult() { }
 
 ### 3. Not Cleaning Up After Tests
 ```java
-@AfterEach
-void tearDown() {
-    repository.deleteAll();
-    MDC.clear();
+@SpringBootTest
+@Transactional
+class TransactionIntegrationTest {
+
+    @AfterEach
+    void clearThreadLocalState() {
+        MDC.clear();
+    }
 }
 ```
+
+The test transaction rolls database changes back automatically. This keeps tests isolated without
+hard-deleting soft-deletable entities. Clear non-transactional state such as MDC explicitly.
 
 ## Resources
 
 - [AssertJ Documentation](https://assertj.github.io/doc/) (assertion library)
 - [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/) (test runner)
 - [Spring Boot Testing Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
-- [TestContainers Documentation](https://testcontainers.com/)
-- [Mockito Documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html)
-
----
-
-## External Links (GitHub Web Viewing)
-
-*The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced test file:*
-
-- [AdminCurrencySeriesControllerTest.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java)
+- [Testcontainers Documentation](https://testcontainers.com/)

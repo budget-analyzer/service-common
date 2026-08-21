@@ -283,21 +283,26 @@ cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiException
 
 ## Testing Patterns
 
-**Pattern**: Comprehensive test coverage using unit tests for logic, integration tests with TestContainers for persistence, and test correct behavior (never test around bugs).
+**Pattern**: Test pure logic with real objects and application behavior with real Spring beans. Use
+Testcontainers for persistence and brokers, and WireMock for external HTTP.
+
+**Rule**: Do not mock or spy application-owned Spring beans. Before writing or modifying tests,
+read [docs/testing-patterns.md](docs/testing-patterns.md) and follow its guidance for real
+components and concrete test implementations.
 
 **When to consult details**:
-- Writing unit tests → Read [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (mocking, naming, structure)
-- Writing integration tests → Read [Integration Testing](docs/testing-patterns.md#integration-tests) (TestContainers, @SpringBootTest)
-- Setting up TestContainers → Read [TestContainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
+- Writing unit tests → Read [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (real objects, naming, structure)
+- Writing integration tests → Read [Integration Testing](docs/testing-patterns.md#integration-tests) (Testcontainers, @SpringBootTest)
+- Setting up Testcontainers → Read [Testcontainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
 - Understanding test philosophy → Read [Testing Philosophy](docs/testing-patterns.md#testing-philosophy) (test correct behavior)
 
 **Quick reference**:
 - **Assertions**: AssertJ exclusively (`assertThat`). Do NOT use JUnit assertions (`assertEquals`, `assertTrue`, `assertThrows`, etc.)
 - Unit tests: `*Test.java` (no Spring context, fast, isolated)
-- Integration tests: `*IntegrationTest.java` (with `@SpringBootTest` + TestContainers)
+- Integration tests: `*IntegrationTest.java` (with `@SpringBootTest` + Testcontainers)
 - Minimum coverage: 80% line coverage via JaCoCo
 - Test correct behavior: Fix bugs, don't write tests around defective implementations
-- TestContainers: Auto-starts PostgreSQL/Redis/RabbitMQ in Docker for integration tests
+- Testcontainers: Auto-starts PostgreSQL/Redis/RabbitMQ in Docker for integration tests
 
 **For comprehensive testing strategies, read [docs/testing-patterns.md](docs/testing-patterns.md) when writing tests.**
 
@@ -708,7 +713,7 @@ All four artifacts are versioned and released together as a coordinated set.
 **Core patterns** (load when working on related tasks):
 - [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) - Architecture, layers, naming, base entities, HTTP patterns
 - [docs/error-handling.md](docs/error-handling.md) - Exception hierarchy, ApiErrorResponse format, error handling
-- [docs/testing-patterns.md](docs/testing-patterns.md) - Unit/integration testing, TestContainers, coverage goals
+- [docs/testing-patterns.md](docs/testing-patterns.md) - Unit/integration testing, Testcontainers, coverage goals
 
 **Advanced patterns** (load when implementing specific features):
 - [docs/common-patterns.md](docs/common-patterns.md) - SOLID principles, design patterns, database/security/performance best practices

@@ -2,34 +2,18 @@ package org.budgetanalyzer.service.servlet.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.startsWith;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.mock.web.MockFilterChain;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
-@ExtendWith(MockitoExtension.class)
 class CorrelationIdFilterTest {
-
-  @Mock private HttpServletRequest request;
-
-  @Mock private HttpServletResponse response;
-
-  @Mock private FilterChain filterChain;
 
   private CorrelationIdFilter correlationIdFilter;
 
@@ -46,98 +30,100 @@ class CorrelationIdFilterTest {
 
   @Test
   void shouldGenerateCorrelationIdWhenNotProvidedInRequest() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
+    var request = new MockHttpServletRequest();
+    var response = new MockHttpServletResponse();
+    var filterChain = new MockFilterChain();
 
-    // Act
     correlationIdFilter.doFilterInternal(request, response, filterChain);
 
-    // Assert
-    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
-    verify(filterChain).doFilter(request, response);
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).startsWith("req_");
+    assertThat(filterChain.getRequest()).isSameAs(request);
+    assertThat(filterChain.getResponse()).isSameAs(response);
   }
 
   @Test
   void shouldUseExistingCorrelationIdFromRequest() throws Exception {
-    // Arrange
     var existingCorrelationId = "req_abc123def456";
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
-        .thenReturn(existingCorrelationId);
+    var request = new MockHttpServletRequest();
+    request.addHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, existingCorrelationId);
+    var response = new MockHttpServletResponse();
+    var filterChain = new MockFilterChain();
 
-    // Act
     correlationIdFilter.doFilterInternal(request, response, filterChain);
 
-    // Assert
-    verify(response).setHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, existingCorrelationId);
-    verify(filterChain).doFilter(request, response);
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
+        .isEqualTo(existingCorrelationId);
+    assertThat(filterChain.getRequest()).isSameAs(request);
+    assertThat(filterChain.getResponse()).isSameAs(response);
   }
 
   @Test
   void shouldTrimExistingCorrelationIdFromRequest() throws Exception {
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
-        .thenReturn("  req_trimmed-123  ");
+    var request = new MockHttpServletRequest();
+    request.addHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "  req_trimmed-123  ");
+    var response = new MockHttpServletResponse();
+    var filterChain = new MockFilterChain();
 
     correlationIdFilter.doFilterInternal(request, response, filterChain);
 
-    verify(response).setHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "req_trimmed-123");
-    verify(filterChain).doFilter(request, response);
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
+        .isEqualTo("req_trimmed-123");
+    assertThat(filterChain.getRequest()).isSameAs(request);
   }
 
   @Test
   void shouldStoreCorrelationIdInMdc() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
+    var request = new MockHttpServletRequest();
+    var response = new MockHttpServletResponse();
 
-    // Act
     correlationIdFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {
-          // Verify MDC is set during filter chain execution
-          String mdcValue = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+          var mdcValue = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
           assertThat(mdcValue).isNotNull();
           assertThat(mdcValue.startsWith("req_")).isTrue();
         });
 
-    // Assert - MDC should be cleared after filter execution
     assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
   void shouldClearMdcAfterFilterExecution() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
+    var request = new MockHttpServletRequest();
+    var response = new MockHttpServletResponse();
 
-    // Act
-    correlationIdFilter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, new MockFilterChain());
 
-    // Assert
     assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
   void shouldClearMdcEvenWhenExceptionIsThrown() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
-    doThrow(new RuntimeException("Simulated error")).when(filterChain).doFilter(request, response);
+    var request = new MockHttpServletRequest();
+    var response = new MockHttpServletResponse();
+    var expectedException = new RuntimeException("Simulated error");
 
-    // Act & Assert
-    assertThatThrownBy(() -> correlationIdFilter.doFilterInternal(request, response, filterChain))
-        .isInstanceOf(RuntimeException.class);
+    assertThatThrownBy(
+            () ->
+                correlationIdFilter.doFilterInternal(
+                    request,
+                    response,
+                    (chainRequest, chainResponse) -> {
+                      throw expectedException;
+                    }))
+        .isSameAs(expectedException);
 
-    // MDC should still be cleared
     assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
   void shouldGenerateUniqueCorrelationIds() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
-
-    // Act - Call filter multiple times
     var correlationIds = new String[10];
     for (int i = 0; i < 10; i++) {
       final int index = i;
+      var request = new MockHttpServletRequest();
+      var response = new MockHttpServletResponse();
       correlationIdFilter.doFilterInternal(
           request,
           response,
@@ -146,25 +132,25 @@ class CorrelationIdFilterTest {
           });
     }
 
-    // Assert - All should be unique
     assertThat(Arrays.stream(correlationIds).distinct().count()).isEqualTo(10);
   }
 
   @Test
   void shouldHandleEmptyCorrelationIdHeader() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("  ");
+    var request = new MockHttpServletRequest();
+    request.addHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "  ");
+    var response = new MockHttpServletResponse();
 
-    // Act
-    correlationIdFilter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, new MockFilterChain());
 
-    // Assert - Should generate new ID when header is empty/whitespace
-    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).startsWith("req_");
   }
 
   @Test
   void shouldGenerateCorrelationIdWhenHeaderContainsUnsafeCharacters() throws Exception {
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("bad value");
+    var request = new MockHttpServletRequest();
+    request.addHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "bad value");
+    var response = new MockHttpServletResponse();
 
     correlationIdFilter.doFilterInternal(
         request,
@@ -176,29 +162,30 @@ class CorrelationIdFilterTest {
           assertThat(correlationId.length()).isEqualTo(36);
         });
 
-    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).startsWith("req_");
   }
 
   @Test
   void shouldGenerateCorrelationIdWhenHeaderExceedsMaxLength() throws Exception {
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("a".repeat(129));
+    var request = new MockHttpServletRequest();
+    request.addHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "a".repeat(129));
+    var response = new MockHttpServletResponse();
 
-    correlationIdFilter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, new MockFilterChain());
 
-    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
+    assertThat(response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).startsWith("req_");
   }
 
   @Test
   void shouldGenerateCorrelationIdWithCorrectFormat() throws Exception {
-    // Arrange
-    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
+    var request = new MockHttpServletRequest();
+    var response = new MockHttpServletResponse();
 
-    // Act
     correlationIdFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {
-          String correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+          var correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
 
           // Assert format: req_<32 hex chars>
           assertThat(correlationId).isNotNull();

@@ -169,7 +169,7 @@ public class TransactionService {
 
 **Why constructor injection?**
 - Immutability: Dependencies are final
-- Testability: Easy to mock in tests
+- Testability: Easy to supply real collaborators or concrete test implementations
 - Explicit dependencies: All requirements visible in constructor
 - Null safety: Spring ensures dependencies are injected before use
 
@@ -188,7 +188,7 @@ public class StringUtils {
 // ❌ WRONG - Static method with side effects
 public class TransactionService {
     public static void saveTransaction(Transaction t) {
-        // Static methods can't be mocked, break testing
+        // Static side effects hide collaborators and make behavior hard to exercise in isolation
     }
 }
 ```

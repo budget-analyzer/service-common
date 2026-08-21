@@ -1,12 +1,8 @@
 package org.budgetanalyzer.service.reactive.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -15,19 +11,13 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
-import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 
 import ch.qos.logback.classic.Level;
@@ -40,15 +30,13 @@ import reactor.test.StepVerifier;
 
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
-@ExtendWith(MockitoExtension.class)
 class ReactiveHttpLoggingFilterTest {
-
-  @Mock private WebFilterChain filterChain;
 
   private HttpLoggingProperties httpLoggingProperties;
   private ReactiveHttpLoggingFilter reactiveHttpLoggingFilter;
-  private Logger logger;
-  private ListAppender<ILoggingEvent> listAppender;
+  private WebFilterChain webFilterChain;
+  private Logger reactiveHttpLoggingFilterLogger;
+  private ListAppender<ILoggingEvent> loggingEventListAppender;
   private Level originalLogLevel;
 
   @BeforeEach
@@ -61,19 +49,21 @@ class ReactiveHttpLoggingFilterTest {
     httpLoggingProperties.setMaxBodySize(10000);
 
     reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
-    logger = (Logger) LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
-    originalLogLevel = logger.getLevel();
-    logger.setLevel(Level.DEBUG);
-    listAppender = new ListAppender<>();
-    listAppender.start();
-    logger.addAppender(listAppender);
+    webFilterChain = exchange -> Mono.empty();
+    reactiveHttpLoggingFilterLogger =
+        (Logger) LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
+    originalLogLevel = reactiveHttpLoggingFilterLogger.getLevel();
+    reactiveHttpLoggingFilterLogger.setLevel(Level.DEBUG);
+    loggingEventListAppender = new ListAppender<>();
+    loggingEventListAppender.start();
+    reactiveHttpLoggingFilterLogger.addAppender(loggingEventListAppender);
   }
 
   @AfterEach
   void tearDown() {
-    logger.detachAppender(listAppender);
-    listAppender.stop();
-    logger.setLevel(originalLogLevel);
+    reactiveHttpLoggingFilterLogger.detachAppender(loggingEventListAppender);
+    loggingEventListAppender.stop();
+    reactiveHttpLoggingFilterLogger.setLevel(originalLogLevel);
   }
 
   @Test
@@ -83,10 +73,9 @@ class ReactiveHttpLoggingFilterTest {
     reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete without decoration
     StepVerifier.create(result).verifyComplete();
@@ -96,10 +85,9 @@ class ReactiveHttpLoggingFilterTest {
   void shouldLogGetRequest() {
     // Arrange
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete successfully
     StepVerifier.create(result).verifyComplete();
@@ -116,10 +104,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/users").body(Flux.just(bodyBuffer)));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete successfully
     StepVerifier.create(result).verifyComplete();
@@ -137,16 +123,14 @@ class ReactiveHttpLoggingFilterTest {
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .body(Flux.just(bodyBuffer)));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
-                  .then(decoratedExchange.getResponse().setComplete());
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
+              .then(decoratedExchange.getResponse().setComplete());
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
 
@@ -167,16 +151,14 @@ class ReactiveHttpLoggingFilterTest {
                 .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=boundary")
                 .body(Flux.just(bodyBuffer)));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
-                  .then(decoratedExchange.getResponse().setComplete());
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
+              .then(decoratedExchange.getResponse().setComplete());
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
 
@@ -192,19 +174,17 @@ class ReactiveHttpLoggingFilterTest {
     var bodyBuffer = DefaultDataBufferFactory.sharedInstance.wrap(responseBody);
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/export"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              decoratedExchange
-                  .getResponse()
-                  .getHeaders()
-                  .set(HttpHeaders.CONTENT_TYPE, "application/octet-stream");
-              return decoratedExchange.getResponse().writeWith(Mono.just(bodyBuffer));
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          decoratedExchange
+              .getResponse()
+              .getHeaders()
+              .set(HttpHeaders.CONTENT_TYPE, "application/octet-stream");
+          return decoratedExchange.getResponse().writeWith(Mono.just(bodyBuffer));
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
 
@@ -218,22 +198,18 @@ class ReactiveHttpLoggingFilterTest {
     // Arrange
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/users"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange =
-                  (org.springframework.web.server.ServerWebExchange) invocation.getArgument(0);
-              // Request and response should be decorated
-              var request = decoratedExchange.getRequest();
-              var response = decoratedExchange.getResponse();
+    webFilterChain =
+        decoratedExchange -> {
+          var request = decoratedExchange.getRequest();
+          var response = decoratedExchange.getResponse();
 
-              assertThat(request).isInstanceOf(CachedBodyServerHttpRequestDecorator.class);
-              assertThat(response).isInstanceOf(CachedBodyServerHttpResponseDecorator.class);
-              return Mono.empty();
-            });
+          assertThat(request).isInstanceOf(CachedBodyServerHttpRequestDecorator.class);
+          assertThat(response).isInstanceOf(CachedBodyServerHttpResponseDecorator.class);
+          return Mono.empty();
+        };
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert
     StepVerifier.create(result).verifyComplete();
@@ -247,23 +223,17 @@ class ReactiveHttpLoggingFilterTest {
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/users"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              assertThat(
-                      decoratedExchange.getRequest()
-                          instanceof CachedBodyServerHttpRequestDecorator)
-                  .isFalse();
-              assertThat(
-                      decoratedExchange.getResponse()
-                          instanceof CachedBodyServerHttpResponseDecorator)
-                  .isFalse();
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return decoratedExchange.getResponse().setComplete();
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          assertThat(decoratedExchange.getRequest())
+              .isNotInstanceOf(CachedBodyServerHttpRequestDecorator.class);
+          assertThat(decoratedExchange.getResponse())
+              .isNotInstanceOf(CachedBodyServerHttpResponseDecorator.class);
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return decoratedExchange.getResponse().setComplete();
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
   }
@@ -276,16 +246,14 @@ class ReactiveHttpLoggingFilterTest {
                 .header("Authorization", "Bearer secret-token")
                 .header("X-Custom-Header", "custom-value"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              decoratedExchange.getResponse().getHeaders().add("Set-Cookie", "session=top-secret");
-              return decoratedExchange.getResponse().setComplete();
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          decoratedExchange.getResponse().getHeaders().add("Set-Cookie", "session=top-secret");
+          return decoratedExchange.getResponse().setComplete();
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
 
@@ -305,15 +273,13 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/users?token=secret&page=1&search=john"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return decoratedExchange.getResponse().setComplete();
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return decoratedExchange.getResponse().setComplete();
+        };
 
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     StepVerifier.create(result).verifyComplete();
 
@@ -330,10 +296,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should log response in doFinally
     StepVerifier.create(result).verifyComplete();
@@ -345,10 +309,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(500);
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log error
     StepVerifier.create(result).verifyComplete();
@@ -363,10 +325,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete (logging skipped for non-errors)
     StepVerifier.create(result).verifyComplete();
@@ -381,10 +341,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(404);
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log error
     StepVerifier.create(result).verifyComplete();
@@ -396,10 +354,10 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     var expectedException = new RuntimeException("Simulated error");
 
-    when(filterChain.filter(any())).thenReturn(Mono.error(expectedException));
+    webFilterChain = chainExchange -> Mono.error(expectedException);
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should propagate error but still log in doFinally
     StepVerifier.create(result).expectError(RuntimeException.class).verify();
@@ -415,10 +373,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/users?page=1&size=10&search=john"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log with query params
     StepVerifier.create(result).verifyComplete();
@@ -437,10 +393,8 @@ class ReactiveHttpLoggingFilterTest {
                 .header("X-Custom-Header", "custom-value")
                 .header("Authorization", "Bearer token123"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log with headers
     StepVerifier.create(result).verifyComplete();
@@ -454,10 +408,8 @@ class ReactiveHttpLoggingFilterTest {
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log with client IP
     StepVerifier.create(result).verifyComplete();
@@ -472,26 +424,12 @@ class ReactiveHttpLoggingFilterTest {
     // Create an unresolved InetSocketAddress (getAddress() returns null)
     var unresolvedAddress = InetSocketAddress.createUnresolved("unresolved-hostname", 8080);
 
-    // Mock the exchange to return the unresolved address
-    var mockRequest = mock(ServerHttpRequest.class);
-    when(mockRequest.getMethod()).thenReturn(HttpMethod.GET);
-    when(mockRequest.getURI()).thenReturn(URI.create("/api/users"));
-    when(mockRequest.getRemoteAddress()).thenReturn(unresolvedAddress);
-    when(mockRequest.getHeaders()).thenReturn(HttpHeaders.EMPTY);
-    when(mockRequest.getBody()).thenReturn(Flux.empty());
-
-    var mockExchange = mock(ServerWebExchange.class);
-    var mockResponse =
-        MockServerWebExchange.from(MockServerHttpRequest.get("/api/users")).getResponse();
-    when(mockExchange.getRequest()).thenReturn(mockRequest);
-    when(mockExchange.getResponse()).thenReturn(mockResponse);
-    when(mockExchange.mutate())
-        .thenReturn(MockServerWebExchange.from(MockServerHttpRequest.get("/api/users")).mutate());
-
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users").remoteAddress(unresolvedAddress));
 
     // Act - Should not throw NPE when getAddress() returns null
-    var result = reactiveHttpLoggingFilter.filter(mockExchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete successfully without NPE
     StepVerifier.create(result).verifyComplete();
@@ -511,10 +449,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/users").body(Flux.just(bodyBuffer)));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete without logging request body
     StepVerifier.create(result).verifyComplete();
@@ -529,10 +465,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete without logging response body
     StepVerifier.create(result).verifyComplete();
@@ -552,10 +486,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/users").body(Flux.just(bodyBuffer)));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with truncated body
     StepVerifier.create(result).verifyComplete();
@@ -567,10 +499,8 @@ class ReactiveHttpLoggingFilterTest {
     var exchange =
         MockServerWebExchange.from(MockServerHttpRequest.post("/api/users").body(Flux.empty()));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete without errors
     StepVerifier.create(result).verifyComplete();
@@ -583,10 +513,9 @@ class ReactiveHttpLoggingFilterTest {
     reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with INFO level logging
     StepVerifier.create(result).verifyComplete();
@@ -604,10 +533,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/users").body(Flux.just(part1, part2)));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should handle multiple buffers
     StepVerifier.create(result).verifyComplete();
@@ -619,15 +546,10 @@ class ReactiveHttpLoggingFilterTest {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              // Simulate some processing time
-              return Mono.delay(Duration.ofMillis(10)).then();
-            });
+    webFilterChain = decoratedExchange -> Mono.delay(Duration.ofMillis(10)).then();
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and log duration
     StepVerifier.create(result).verifyComplete();
@@ -640,10 +562,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/users").header("User-Agent", "kube-probe/1.34"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -657,10 +577,8 @@ class ReactiveHttpLoggingFilterTest {
             MockServerHttpRequest.get("/actuator/health")
                 .header("User-Agent", "ELB-HealthChecker/2.0"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -673,10 +591,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/health").header("User-Agent", "GoogleHC/1.0"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -690,10 +606,8 @@ class ReactiveHttpLoggingFilterTest {
             MockServerHttpRequest.get("/api/users")
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with logging
     StepVerifier.create(result).verifyComplete();
@@ -709,10 +623,8 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/users").header("User-Agent", "kube-probe/1.34"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with logging even for health check
     StepVerifier.create(result).verifyComplete();
@@ -726,10 +638,8 @@ class ReactiveHttpLoggingFilterTest {
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/actuator/health"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -743,10 +653,8 @@ class ReactiveHttpLoggingFilterTest {
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/other/endpoint"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete and skip logging (not in include list)
     StepVerifier.create(result).verifyComplete();
@@ -760,10 +668,8 @@ class ReactiveHttpLoggingFilterTest {
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with logging
     StepVerifier.create(result).verifyComplete();
@@ -774,10 +680,8 @@ class ReactiveHttpLoggingFilterTest {
     // Arrange
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
 
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
-
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert - Should complete with logging (no user agent is not a health check)
     StepVerifier.create(result).verifyComplete();
@@ -794,16 +698,14 @@ class ReactiveHttpLoggingFilterTest {
             MockServerHttpRequest.get(
                 "/login/oauth2/code/idp?code=authcode123&state=csrfstate456"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return decoratedExchange.getResponse().setComplete();
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return decoratedExchange.getResponse().setComplete();
+        };
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert
     StepVerifier.create(result).verifyComplete();
@@ -825,16 +727,14 @@ class ReactiveHttpLoggingFilterTest {
         MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/test?custom_key=secret&page=1&code=auth123"));
 
-    when(filterChain.filter(any()))
-        .thenAnswer(
-            invocation -> {
-              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
-              return decoratedExchange.getResponse().setComplete();
-            });
+    webFilterChain =
+        decoratedExchange -> {
+          decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+          return decoratedExchange.getResponse().setComplete();
+        };
 
     // Act
-    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, webFilterChain);
 
     // Assert
     StepVerifier.create(result).verifyComplete();
@@ -848,7 +748,7 @@ class ReactiveHttpLoggingFilterTest {
   }
 
   private String loggedMessages() {
-    return listAppender.list.stream()
+    return loggingEventListAppender.list.stream()
         .map(ILoggingEvent::getFormattedMessage)
         .collect(Collectors.joining("\n"));
   }
