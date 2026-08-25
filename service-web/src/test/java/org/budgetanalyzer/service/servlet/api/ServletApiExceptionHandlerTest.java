@@ -9,12 +9,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
@@ -22,6 +24,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
@@ -111,6 +114,40 @@ class ServletApiExceptionHandlerTest {
     assertThat(response.getMessage()).isNotNull();
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
+  }
+
+  @Test
+  @DisplayName("Should handle NoResourceFoundException with NOT_FOUND type and 404")
+  void shouldHandleNoResourceFoundException() {
+    var exception = new NoResourceFoundException(HttpMethod.GET, "api/removed-route");
+
+    var response = servletApiExceptionHandler.handle(exception);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
+    assertThat(response.getBody().getMessage()).isEqualTo(HttpStatus.NOT_FOUND.getReasonPhrase());
+    assertThat(response.getBody().getCode()).isNull();
+    assertThat(response.getBody().getFieldErrors()).isNull();
+  }
+
+  @Test
+  @DisplayName(
+      "Should handle unsupported request method with INVALID_REQUEST type and Allow header")
+  void shouldHandleHttpRequestMethodNotSupportedException() {
+    var exception = new HttpRequestMethodNotSupportedException("PUT", List.of("GET", "PATCH"));
+
+    var response = servletApiExceptionHandler.handle(exception);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    assertThat(response.getHeaders().getAllow())
+        .containsExactlyInAnyOrder(HttpMethod.GET, HttpMethod.PATCH);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
+    assertThat(response.getBody().getMessage())
+        .isEqualTo(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase());
+    assertThat(response.getBody().getCode()).isNull();
+    assertThat(response.getBody().getFieldErrors()).isNull();
   }
 
   @Test

@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
@@ -47,6 +49,8 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link InvalidRequestException} → 400 Bad Request
  *   <li>{@link ResourceNotFoundException} → 404 Not Found
  *   <li>{@link NoHandlerFoundException} → 404 Not Found
+ *   <li>{@link NoResourceFoundException} → 404 Not Found
+ *   <li>{@link HttpRequestMethodNotSupportedException} → 405 Method Not Allowed
  *   <li>{@link BusinessException} → 422 Unprocessable Entity (includes error code)
  *   <li>{@link ClientException} → 503 Service Unavailable
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
@@ -146,6 +150,47 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
             ApiErrorType.NOT_FOUND,
             ApiExceptionHandler.messageOrDefault(exception.getMessage(), "Resource not found"))
         .build();
+  }
+
+  /**
+   * Handles {@link NoResourceFoundException} and returns HTTP 404 Not Found.
+   *
+   * <p>Spring MVC raises this exception when an unmapped request reaches the static resource
+   * handler. The response uses a generic message so resource-handler implementation details are not
+   * exposed to clients.
+   *
+   * @param exception the exception thrown when no static resource matches the request
+   * @return response entity with a standardized NOT_FOUND error response
+   */
+  @ExceptionHandler
+  public ResponseEntity<ApiErrorResponse> handle(NoResourceFoundException exception) {
+    logException(ApiErrorType.NOT_FOUND, null, exception);
+    var response =
+        ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase())
+            .build();
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  /**
+   * Handles {@link HttpRequestMethodNotSupportedException} and returns HTTP 405 Method Not Allowed.
+   *
+   * <p>Protocol headers supplied by Spring MVC are preserved, including the {@code Allow} header
+   * that identifies the methods supported by the matched route. The response uses a generic message
+   * so request-mapping implementation details are not exposed to clients.
+   *
+   * @param exception the exception thrown when a route does not support the request method
+   * @return response entity with a standardized INVALID_REQUEST error response and protocol headers
+   */
+  @ExceptionHandler
+  public ResponseEntity<ApiErrorResponse> handle(HttpRequestMethodNotSupportedException exception) {
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    var response =
+        ApiErrorResponse.builder(
+                ApiErrorType.INVALID_REQUEST, HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase())
+            .build();
+    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+        .headers(exception.getHeaders())
+        .body(response);
   }
 
   /**
