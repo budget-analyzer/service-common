@@ -1,10 +1,14 @@
 package org.budgetanalyzer.service.integration;
 
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -94,6 +99,42 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"))
         .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+  }
+
+  @Test
+  @DisplayName("Should return 405 with standard error and Allow header for unsupported method")
+  void shouldReturn405ForUnsupportedMethod() throws Exception {
+    mockMvc
+        .perform(put("/api/test/method-restricted").with(ClaimsHeaderTestBuilder.defaultUser()))
+        .andExpect(status().isMethodNotAllowed())
+        .andExpect(
+            header()
+                .string(HttpHeaders.ALLOW, allOf(containsString("GET"), containsString("PATCH"))))
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
+        .andExpect(jsonPath("$.message").isString());
+  }
+
+  @Test
+  @DisplayName("Should return 404 with standard error for unmapped route")
+  void shouldReturn404ForUnmappedRoute() throws Exception {
+    mockMvc
+        .perform(get("/api/test/removed-route").with(ClaimsHeaderTestBuilder.defaultUser()))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.type").value("NOT_FOUND"))
+        .andExpect(jsonPath("$.message").isString());
+  }
+
+  @Test
+  @DisplayName("Should preserve ResponseStatusException behavior")
+  void shouldPreserveResponseStatusExceptionBehavior() throws Exception {
+    mockMvc
+        .perform(get("/api/test/response-status").with(ClaimsHeaderTestBuilder.defaultUser()))
+        .andExpect(status().isConflict())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
+        .andExpect(jsonPath("$.message").isString());
   }
 
   @Test

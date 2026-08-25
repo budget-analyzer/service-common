@@ -59,7 +59,7 @@ The `ApiErrorType` enum defines standard error categories:
 
 | Type | HTTP Status | Use Case | Includes Code | Includes Field Errors |
 |------|-------------|----------|---------------|---------------------|
-| `INVALID_REQUEST` | 400 | Malformed request or bad syntax | No | No |
+| `INVALID_REQUEST` | 400/405 | Malformed request, bad syntax, or unsupported HTTP method | No | No |
 | `VALIDATION_ERROR` | 400 | Field validation failed | No | Yes |
 | `NOT_FOUND` | 404 | Requested resource does not exist | No | No |
 | `APPLICATION_ERROR` | 422 | Business rule violation | Yes | No |
@@ -211,7 +211,9 @@ For reactive applications, the shared JSON contract is applied in both places:
 | Exception Class | HTTP Status | Error Type | Additional Fields |
 |----------------|-------------|------------|-------------------|
 | `ResourceNotFoundException` | 404 | `NOT_FOUND` | None |
+| `NoResourceFoundException` (servlet) | 404 | `NOT_FOUND` | None |
 | `InvalidRequestException` | 400 | `INVALID_REQUEST` | None |
+| `HttpRequestMethodNotSupportedException` (servlet) | 405 | `INVALID_REQUEST` | `Allow` and other protocol headers preserved |
 | `BusinessException` | 422 | `APPLICATION_ERROR` | `code` |
 | `ServiceUnavailableException` | 503 | `SERVICE_UNAVAILABLE` | None |
 | `ClientException` | 503 | `SERVICE_UNAVAILABLE` | None |
@@ -272,6 +274,21 @@ Without this handler, `ResponseStatusException` would fall through to the generi
 
 `ServletApiExceptionHandler`, `ReactiveApiExceptionHandler`, and
 `ReactiveErrorWebExceptionHandler` support this mapping where applicable.
+
+### Servlet HTTP Protocol Exception Handling
+
+Spring MVC may raise protocol exceptions before a controller method runs. The shared
+`ServletApiExceptionHandler` maps these failures to the same JSON contract used for application
+exceptions:
+
+- `HttpRequestMethodNotSupportedException` returns 405 Method Not Allowed with
+  `INVALID_REQUEST`. Spring's protocol headers are copied to the response, especially `Allow`, so
+  clients can discover the methods supported by the matched route.
+- `NoResourceFoundException` returns 404 Not Found with `NOT_FOUND`. This is the exception Spring's
+  static resource mapping raises when no controller or static resource matches a route.
+
+Both mappings use generic client-facing messages. Exception class names, static-resource handler
+details, and stack traces are never included in the response.
 
 ## Best Practices
 
