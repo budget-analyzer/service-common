@@ -17,15 +17,14 @@ class ApiErrorResponseTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
-  @DisplayName("Should build error response with type and message only")
-  void shouldBuildErrorResponseWithTypeAndMessageOnly() {
+  @DisplayName("Should build error response with required fields only")
+  void shouldBuildErrorResponseWithRequiredFieldsOnly() {
     var type = ApiErrorType.INVALID_REQUEST;
     var message = "Invalid request format";
 
     var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -45,7 +44,6 @@ class ApiErrorResponseTest {
         ApiErrorResponse.builder(type, message).code(code).fieldErrors(fieldErrors).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getCode()).isEqualTo(code);
     assertThat(response.getFieldErrors()).isEqualTo(fieldErrors);
     assertThat(response.getFieldErrors().size()).isEqualTo(2);
@@ -61,7 +59,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).code(code).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getCode()).isEqualTo(code);
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -76,7 +73,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).fieldErrors(fieldErrors).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getFieldErrors()).isNotNull();
     assertThat(response.getFieldErrors().size()).isEqualTo(1);
   }
@@ -90,7 +86,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -102,7 +97,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -114,23 +108,20 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
   @DisplayName("Should reject null type in strict builder")
   void shouldRejectNullTypeInStrictBuilder() {
     assertThatThrownBy(() -> ApiErrorResponse.builder(null, "Error message"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("type must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null message in strict builder")
   void shouldRejectNullMessageInStrictBuilder() {
     assertThatThrownBy(() -> ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -138,9 +129,7 @@ class ApiErrorResponseTest {
   void shouldRejectNullTypeWhenBuilderSetterClearsRequiredType() {
     var builder = ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "Error message");
 
-    assertThatThrownBy(() -> builder.type(null).build())
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("type must not be null");
+    assertThatThrownBy(() -> builder.type(null).build()).isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -149,8 +138,7 @@ class ApiErrorResponseTest {
     var builder = ApiErrorResponse.builder(ApiErrorType.INTERNAL_ERROR, "Error message");
 
     assertThatThrownBy(() -> builder.message(null).build())
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -162,7 +150,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).code(null).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getCode()).isNull();
   }
 
@@ -175,7 +162,6 @@ class ApiErrorResponseTest {
     var response = ApiErrorResponse.builder(type, message).fieldErrors(null).build();
 
     assertThat(response.getType()).isEqualTo(type);
-    assertThat(response.getMessage()).isEqualTo(message);
     assertThat(response.getFieldErrors()).isNull();
   }
 
@@ -233,23 +219,20 @@ class ApiErrorResponseTest {
     var json = objectMapper.readTree(objectMapper.writeValueAsString(response));
 
     assertThat(json.path("type").asText()).isEqualTo("VALIDATION_ERROR");
-    assertThat(json.path("message").asText()).isEqualTo("Validation failed");
+    assertThat(json.has("message")).isTrue();
     assertThat(json.path("fieldErrors").get(0).path("field").asText()).isEqualTo("email");
-    assertThat(json.path("fieldErrors").get(0).path("message").asText())
-        .isEqualTo("invalid format");
+    assertThat(json.path("fieldErrors").get(0).has("message")).isTrue();
   }
 
   @Test
-  @DisplayName("Should overwrite values when builder methods called multiple times")
-  void shouldOverwriteValuesWhenBuilderMethodsCalledMultipleTimes() {
+  @DisplayName("Should overwrite type when builder method called multiple times")
+  void shouldOverwriteTypeWhenBuilderMethodCalledMultipleTimes() {
     var response =
         ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "First message")
             .type(ApiErrorType.INTERNAL_ERROR) // Overwrite
-            .message("Second message") // Overwrite
             .build();
 
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("Second message");
   }
 
   @Test

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class SafeLoggerTest {
 
   @Test
-  void testToJson_withSimpleObject() {
+  void shouldSerializeSimpleObjectToJson() {
     var data = Map.of("key", "value", "count", 42);
     var json = SafeLogger.toJson(data);
 
@@ -22,7 +22,7 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testToJson_withDateTime() {
+  void shouldSerializeDateTimeToJson() {
     var data = Map.of("timestamp", LocalDateTime.of(2024, 1, 15, 10, 30, 0));
     var json = SafeLogger.toJson(data);
 
@@ -31,7 +31,7 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testToJson_withUnknownType_usesToString() {
+  void shouldUseToStringWhenSerializingUnknownType() {
     // Simulate an unknown type like HttpMethod that has no serializable properties
     var unknownType = new EmptyBeanType("GET");
     var data = new HashMap<String, Object>();
@@ -48,7 +48,7 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testToJson_withUnknownTypeDirectly_usesToString() {
+  void shouldUseToStringWhenSerializingUnknownRootType() {
     var unknownType = new EmptyBeanType("POST");
     var json = SafeLogger.toJson(unknownType);
 
@@ -56,7 +56,7 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testToJson_withNestedUnknownType() {
+  void shouldUseToStringWhenSerializingNestedUnknownType() {
     var unknownType = new EmptyBeanType("DELETE");
     var nested = Map.of("request", Map.of("method", unknownType, "status", 200));
 
@@ -67,13 +67,13 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testToJson_withNullValue() {
+  void shouldReturnNullLiteralWhenSerializingNull() {
     var json = SafeLogger.toJson(null);
     assertThat(json).isEqualTo("null");
   }
 
   @Test
-  void testToJson_withEmptyMap() {
+  void shouldReturnEmptyJsonObjectWhenSerializingEmptyMap() {
     var json = SafeLogger.toJson(Map.of());
     // Expected: empty JSON object with pretty printing (space between braces)
     var expectedEmptyJson = "{" + " " + "}";
@@ -81,79 +81,79 @@ class SafeLoggerTest {
   }
 
   @Test
-  void testMask_withShowLast() {
+  void shouldPreserveTrailingCharactersWhenMaskingWithShowLast() {
     var masked = SafeLogger.mask("secret123", 3);
     assertThat(masked).isEqualTo("******123");
   }
 
   @Test
-  void testMask_completely() {
+  void shouldMaskValueCompletely() {
     var masked = SafeLogger.mask("secret");
     assertThat(masked).isEqualTo("********");
   }
 
   @Test
-  void testMask_withNull() {
+  void shouldReturnNullWhenMaskingNull() {
     var masked = SafeLogger.mask(null);
     assertThat(masked).isNull();
   }
 
   @Test
-  void testMask_withEmptyString() {
+  void shouldReturnEmptyStringWhenMaskingEmptyString() {
     var masked = SafeLogger.mask("");
     assertThat(masked).isEmpty();
   }
 
   @Test
-  void testMask_withShortValue() {
+  void shouldMaskEntireShortValueWhenShowLastExceedsLength() {
     var masked = SafeLogger.mask("ab", 5);
     assertThat(masked).isEqualTo("**");
   }
 
   @Test
-  void testTruncateId_standardUuid() {
+  void shouldTruncateStandardUuid() {
     var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000");
     assertThat(result).isEqualTo("550e8400…");
   }
 
   @Test
-  void testTruncateId_null() {
+  void shouldReturnNullPlaceholderWhenTruncatingNull() {
     var result = SafeLogger.truncateId(null);
     assertThat(result).isEqualTo("[null]");
   }
 
   @Test
-  void testTruncateId_empty() {
+  void shouldReturnMaskWhenTruncatingEmptyString() {
     var result = SafeLogger.truncateId("");
     assertThat(result).isEqualTo("***");
   }
 
   @Test
-  void testTruncateId_shortString() {
+  void shouldReturnMaskWhenTruncatingShortString() {
     var result = SafeLogger.truncateId("abc");
     assertThat(result).isEqualTo("***");
   }
 
   @Test
-  void testTruncateId_exactLengthString() {
+  void shouldReturnMaskWhenTruncatingExactLengthString() {
     var result = SafeLogger.truncateId("12345678");
     assertThat(result).isEqualTo("***");
   }
 
   @Test
-  void testTruncateId_customShowChars() {
+  void shouldTruncateIdUsingCustomVisibleCharacterCount() {
     var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", 4);
     assertThat(result).isEqualTo("550e…");
   }
 
   @Test
-  void testTruncateId_negativeShowChars() {
+  void shouldReturnMaskWhenVisibleCharacterCountIsNegative() {
     var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", -1);
     assertThat(result).isEqualTo("***");
   }
 
   @Test
-  void testTruncateId_zeroShowChars() {
+  void shouldReturnMaskWhenVisibleCharacterCountIsZero() {
     var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", 0);
     assertThat(result).isEqualTo("***");
   }

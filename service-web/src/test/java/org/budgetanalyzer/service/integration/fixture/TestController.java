@@ -88,7 +88,7 @@ public class TestController {
    */
   @GetMapping("/runtime-error")
   public ResponseEntity<String> throwRuntimeException() {
-    throw new RuntimeException("Unexpected runtime error");
+    throw new RuntimeException("internal-secret-runtime-63820");
   }
 
   /**

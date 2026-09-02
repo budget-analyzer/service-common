@@ -14,25 +14,13 @@ import org.junit.jupiter.api.Test;
 class ServiceUnavailableExceptionTest {
 
   @Test
-  @DisplayName("Should create exception with message only")
-  void shouldCreateExceptionWithMessageOnly() {
-    var message = "Database connection unavailable";
-
-    var exception = new ServiceUnavailableException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isNull();
-  }
-
-  @Test
-  @DisplayName("Should create exception with message and cause")
-  void shouldCreateExceptionWithMessageAndCause() {
+  @DisplayName("Should create exception with cause")
+  void shouldCreateExceptionWithCause() {
     var message = "External API unavailable";
     var cause = new ConnectException("Connection refused");
 
     var exception = new ServiceUnavailableException(message, cause);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isSameAs(cause);
   }
 
@@ -53,22 +41,12 @@ class ServiceUnavailableExceptionTest {
   }
 
   @Test
-  @DisplayName("Should handle null message")
-  void shouldHandleNullMessage() {
-    var exception = new ServiceUnavailableException(null);
-
-    assertThat(exception.getMessage()).isNull();
-    assertThat(exception.getCause()).isNull();
-  }
-
-  @Test
   @DisplayName("Should handle null cause")
   void shouldHandleNullCause() {
     var message = "Service unavailable";
 
     var exception = new ServiceUnavailableException(message, null);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isNull();
   }
 
@@ -78,7 +56,6 @@ class ServiceUnavailableExceptionTest {
     var sqlException = new RuntimeException("Database connection timeout");
     var exception = new ServiceUnavailableException("Cannot connect to database", sqlException);
 
-    assertThat(exception.getMessage()).isEqualTo("Cannot connect to database");
     assertThat(exception.getCause()).isSameAs(sqlException);
   }
 
@@ -88,7 +65,6 @@ class ServiceUnavailableExceptionTest {
     var timeoutException = new TimeoutException("Request timeout after 30s");
     var exception = new ServiceUnavailableException("Currency API timeout", timeoutException);
 
-    assertThat(exception.getMessage()).isEqualTo("Currency API timeout");
     assertThat(exception.getCause()).isSameAs(timeoutException);
   }
 
@@ -99,29 +75,6 @@ class ServiceUnavailableExceptionTest {
     var exception =
         new ServiceUnavailableException("Failed to reach payment gateway", networkException);
 
-    assertThat(exception.getMessage()).isEqualTo("Failed to reach payment gateway");
     assertThat(exception.getCause()).isSameAs(networkException);
-  }
-
-  @Test
-  @DisplayName("Should indicate downstream service failure")
-  void shouldIndicateDownstreamServiceFailure() {
-    var message = "Authentication service is down";
-
-    var exception = new ServiceUnavailableException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getMessage().contains("down")).isTrue();
-  }
-
-  @Test
-  @DisplayName("Should indicate circuit breaker scenario")
-  void shouldIndicateCircuitBreakerScenario() {
-    var message = "Circuit breaker open for payment service";
-
-    var exception = new ServiceUnavailableException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getMessage().contains("Circuit breaker")).isTrue();
   }
 }

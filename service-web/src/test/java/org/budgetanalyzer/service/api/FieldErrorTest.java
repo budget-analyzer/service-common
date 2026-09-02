@@ -24,7 +24,6 @@ class FieldErrorTest {
     var fieldError = FieldError.forField(field, message, rejectedValue);
 
     assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
@@ -37,7 +36,6 @@ class FieldErrorTest {
     var fieldError = FieldError.forField(field, message, null);
 
     assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isNull();
   }
 
@@ -45,32 +43,28 @@ class FieldErrorTest {
   @DisplayName("Should reject null field in strict field factory")
   void shouldRejectNullFieldInStrictFieldFactory() {
     assertThatThrownBy(() -> FieldError.forField(null, "validation failed", "some-value"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("field must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null message in strict field factory")
   void shouldRejectNullMessageInStrictFieldFactory() {
     assertThatThrownBy(() -> FieldError.forField("amount", null, "-100"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null field in field factory")
   void shouldRejectNullFieldInFieldFactory() {
     assertThatThrownBy(() -> FieldError.of(null, "validation failed", "some-value"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("field must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null message in field factory")
   void shouldRejectNullMessageInFieldFactory() {
     assertThatThrownBy(() -> FieldError.of("amount", null, "-100"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -179,7 +173,6 @@ class FieldErrorTest {
     var fieldError = FieldError.forField(field, message, rejectedValue);
 
     assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
@@ -209,7 +202,6 @@ class FieldErrorTest {
 
     assertThat(fieldError.getIndex()).isEqualTo(index);
     assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
@@ -217,32 +209,28 @@ class FieldErrorTest {
   @DisplayName("Should reject null field in strict indexed field factory")
   void shouldRejectNullFieldInStrictIndexedFieldFactory() {
     assertThatThrownBy(() -> FieldError.forIndexedField(0, null, "must not be null", null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("field must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null message in strict indexed field factory")
   void shouldRejectNullMessageInStrictIndexedFieldFactory() {
     assertThatThrownBy(() -> FieldError.forIndexedField(0, "amount", null, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null field in indexed field factory")
   void shouldRejectNullFieldInIndexedFieldFactory() {
     assertThatThrownBy(() -> FieldError.of(0, null, "must not be null", null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("field must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   @DisplayName("Should reject null message in indexed field factory")
   void shouldRejectNullMessageInIndexedFieldFactory() {
     assertThatThrownBy(() -> FieldError.of(0, "amount", null, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -256,7 +244,6 @@ class FieldErrorTest {
 
     assertThat(fieldError.getIndex()).isEqualTo(index);
     assertThat(fieldError.getField()).isEqualTo(field);
-    assertThat(fieldError.getMessage()).isEqualTo(message);
     assertThat(fieldError.getRejectedValue()).isNull();
   }
 

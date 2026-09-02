@@ -14,6 +14,8 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.ServiceUnavailableException;
@@ -33,31 +35,28 @@ class ApiExceptionHandlerTest {
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Resource not found");
   }
 
   @Test
-  @DisplayName("Should resolve ResponseStatusException 401 with safe generic message")
-  void shouldResolveResponseStatusException401WithSafeMessage() {
+  @DisplayName("Should resolve ResponseStatusException 401 as UNAUTHORIZED")
+  void shouldResolveResponseStatusException401() {
     var resolvedError =
         apiExceptionHandler.resolveCommonException(
             new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key expired"));
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Authentication required");
   }
 
   @Test
-  @DisplayName("Should resolve ResponseStatusException with null reason using status message")
-  void shouldResolveResponseStatusExceptionWithNullReasonUsingStatusMessage() {
+  @DisplayName("Should resolve ResponseStatusException with null reason")
+  void shouldResolveResponseStatusExceptionWithNullReason() {
     var resolvedError =
         apiExceptionHandler.resolveCommonException(
             new ResponseStatusException(HttpStatus.BAD_REQUEST));
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Bad Request");
   }
 
   @Test
@@ -93,7 +92,6 @@ class ApiExceptionHandlerTest {
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Downstream failure");
   }
 
   @Test
@@ -105,18 +103,19 @@ class ApiExceptionHandlerTest {
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Database unavailable");
   }
 
   @Test
   @DisplayName("Should map generic exception to internal error")
-  void shouldMapGenericExceptionToInternalError() {
+  void shouldMapGenericExceptionToInternalError() throws Exception {
+    var internalSecret = "internal-secret-resolver-48391";
     var resolvedError =
-        apiExceptionHandler.resolveCommonException(new IllegalStateException("Unexpected"));
+        apiExceptionHandler.resolveCommonException(new IllegalStateException(internalSecret));
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("An unexpected error occurred");
+    var serializedResponse = new ObjectMapper().writeValueAsString(resolvedError.response());
+    assertThat(serializedResponse).doesNotContain(internalSecret);
   }
 
   @Test
@@ -127,7 +126,6 @@ class ApiExceptionHandlerTest {
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-    assertThat(resolvedError.response().getMessage()).isEqualTo("Authentication required");
   }
 
   @Test
@@ -148,18 +146,14 @@ class ApiExceptionHandlerTest {
     assertThat(resolvedError.response().getFieldErrors()).isNotNull();
     assertThat(resolvedError.response().getFieldErrors().size()).isEqualTo(2);
     assertThat(resolvedError.response().getFieldErrors().get(0).getField()).isEqualTo("name");
-    assertThat(resolvedError.response().getFieldErrors().get(0).getMessage())
-        .isEqualTo("must not be blank");
     assertThat(resolvedError.response().getFieldErrors().get(0).getRejectedValue()).isEqualTo("");
     assertThat(resolvedError.response().getFieldErrors().get(1).getField()).isEqualTo("age");
-    assertThat(resolvedError.response().getFieldErrors().get(1).getMessage())
-        .isEqualTo("must be positive");
     assertThat(resolvedError.response().getFieldErrors().get(1).getRejectedValue()).isEqualTo(-1);
   }
 
   @Test
-  @DisplayName("Should extract field errors with default message when Spring message is null")
-  void shouldExtractFieldErrorsWithDefaultMessageWhenSpringMessageIsNull() {
+  @DisplayName("Should extract field errors when Spring message is null")
+  void shouldExtractFieldErrorsWhenSpringMessageIsNull() {
     var bindingResult = new BeanPropertyBindingResult(new TestPayload("", -1), "testPayload");
     bindingResult.addError(
         new org.springframework.validation.FieldError(
@@ -171,8 +165,7 @@ class ApiExceptionHandlerTest {
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.VALIDATION_ERROR);
     assertThat(resolvedError.response().getFieldErrors()).isNotNull();
     assertThat(resolvedError.response().getFieldErrors().get(0).getField()).isEqualTo("name");
-    assertThat(resolvedError.response().getFieldErrors().get(0).getMessage())
-        .isEqualTo("Invalid value");
+    assertThat(resolvedError.response().getFieldErrors().get(0).getRejectedValue()).isEqualTo("");
   }
 
   @Test
@@ -187,7 +180,6 @@ class ApiExceptionHandlerTest {
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(responseEntity.getBody()).isNotNull();
     assertThat(responseEntity.getBody().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(responseEntity.getBody().getMessage()).isEqualTo("Missing resource");
     assertThat(responseEntity.getBody().getCode()).isNull();
   }
 

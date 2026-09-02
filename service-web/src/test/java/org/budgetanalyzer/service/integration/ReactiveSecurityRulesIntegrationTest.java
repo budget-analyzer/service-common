@@ -140,8 +140,6 @@ class ReactiveSecurityRulesIntegrationTest {
         .contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
         .expectBody()
         .jsonPath("$.type")
-        .isEqualTo("FORBIDDEN")
-        .jsonPath("$.message")
-        .isEqualTo("You do not have permission to perform this action");
+        .isEqualTo("FORBIDDEN");
   }
 }

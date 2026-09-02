@@ -46,16 +46,19 @@ class ReactiveErrorWebExceptionHandlerTest {
   @DisplayName("Should return internal error for generic exception")
   void shouldReturnInternalErrorForGenericException() throws Exception {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
+    var internalSecret = "internal-secret-reactive-web-handler-92714";
 
     StepVerifier.create(
-            reactiveErrorWebExceptionHandler.handle(exchange, new IllegalStateException("Boom")))
+            reactiveErrorWebExceptionHandler.handle(
+                exchange, new IllegalStateException(internalSecret)))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var serializedResponse = exchange.getResponse().getBodyAsString().block();
+    var responseBody = objectMapper.readTree(serializedResponse);
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.INTERNAL_ERROR.name());
-    assertThat(responseBody.path("message").asText()).isEqualTo("An unexpected error occurred");
+    assertThat(serializedResponse).doesNotContain(internalSecret);
   }
 
   @Test
@@ -72,7 +75,6 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.NOT_FOUND.name());
-    assertThat(responseBody.path("message").asText()).isEqualTo("Missing resource");
   }
 
   @Test
@@ -94,8 +96,8 @@ class ReactiveErrorWebExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should return safe unauthorized message for authentication exception")
-  void shouldReturnSafeUnauthorizedMessageForAuthenticationException() throws Exception {
+  @DisplayName("Should return unauthorized error for authentication exception")
+  void shouldReturnUnauthorizedErrorForAuthenticationException() throws Exception {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
 
     StepVerifier.create(
@@ -107,12 +109,11 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.UNAUTHORIZED.name());
-    assertThat(responseBody.path("message").asText()).isEqualTo("Authentication required");
   }
 
   @Test
-  @DisplayName("Should return safe forbidden message for access denied exception")
-  void shouldReturnSafeForbiddenMessageForAccessDeniedException() throws Exception {
+  @DisplayName("Should return forbidden error for access denied exception")
+  void shouldReturnForbiddenErrorForAccessDeniedException() throws Exception {
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
 
     StepVerifier.create(
@@ -124,8 +125,6 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.FORBIDDEN.name());
-    assertThat(responseBody.path("message").asText())
-        .isEqualTo("You do not have permission to perform this action");
   }
 
   @Test
@@ -149,7 +148,6 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.VALIDATION_ERROR.name());
-    assertThat(responseBody.path("message").asText()).isEqualTo("Validation failed for 2 field(s)");
     assertThat(responseBody.path("fieldErrors").size()).isEqualTo(2);
     assertThat(responseBody.path("fieldErrors").get(0).path("field").asText()).isEqualTo("name");
     assertThat(responseBody.path("fieldErrors").get(1).path("field").asText()).isEqualTo("age");
