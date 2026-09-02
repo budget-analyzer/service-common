@@ -554,12 +554,17 @@ tests cover the remaining core utility conditionals.
 
 ### 1. Test Naming Convention
 
-**CRITICAL**: Test method names MUST clearly express expected behavior and conditions using camelCase without underscores. Use `@DisplayName` only when the functionality is not obvious from the method name alone.
+**CRITICAL**: Test method names MUST clearly express expected behavior and conditions using
+lowerCamelCase without underscores or the redundant `test` prefix. This is a deliberate Budget
+Analyzer convention enforced centrally by Checkstyle for all methods; it is not a Java or JUnit
+restriction. Use `@DisplayName` only when the identifier alone cannot communicate the behavior
+clearly.
 
 **Allowed patterns** (choose one and be consistent within a test class):
 - `should[Behavior]When[Condition]` - BDD style (recommended)
 - `should[Behavior]` - When condition is obvious from context
-- `[behavior][Condition]` - Direct style (e.g., `throwsExceptionWhenAmountNegative`)
+- `[behavior][Condition]` - Clear direct lowerCamelCase style (e.g.,
+  `throwsExceptionWhenAmountNegative`)
 ```java
 // ✅ GOOD - Acceptable patterns
 @Test
@@ -579,11 +584,11 @@ void returnsEmptyListWhenNoTransactionsExist() { }
 @DisplayName("should handle edge case where transaction date falls on leap day during DST transition")
 void shouldHandleLeapDayDstEdgeCase() { }
 
-// ❌ BAD - Underscores violate checkstyle
+// ❌ BAD - Underscores violate the centrally enforced Budget Analyzer convention
 @Test
 void when_amount_is_negative_then_throws_exception() { }
 
-// ❌ BAD - Unclear intent
+// ❌ BAD - Redundant test prefix and unclear intent
 @Test
 void testCalculate() { }
 

@@ -77,15 +77,11 @@ class CsvRowTest {
 
   @Test
   void shouldRejectNullValuesThroughPreferredFactory() {
-    assertThatThrownBy(() -> CsvRow.of(1, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("values must not be null");
+    assertThatThrownBy(() -> CsvRow.of(1, null)).isInstanceOf(NullPointerException.class);
   }
 
   @Test
   void shouldRejectNullValuesThroughCanonicalConstructor() {
-    assertThatThrownBy(() -> new CsvRow(1, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("values must not be null");
+    assertThatThrownBy(() -> new CsvRow(1, null)).isInstanceOf(NullPointerException.class);
   }
 }

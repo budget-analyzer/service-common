@@ -25,7 +25,7 @@ class SecurityContextUtilTest {
   // --- getCurrentUserId tests ---
 
   @Test
-  void getCurrentUserId_shouldReturnUserIdFromAuthentication() {
+  void getCurrentUserIdReturnsUserIdFromAuthentication() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("ROLE_USER")));
@@ -37,7 +37,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void getCurrentUserId_shouldReturnEmptyWhenNoAuthentication() {
+  void getCurrentUserIdReturnsEmptyWhenNoAuthentication() {
     SecurityContextHolder.clearContext();
 
     var userId = SecurityContextUtil.getCurrentUserId();
@@ -46,7 +46,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void getCurrentUserId_shouldReturnEmptyForAnonymousUser() {
+  void getCurrentUserIdReturnsEmptyForAnonymousUser() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated("anonymousUser", Set.of(), List.of());
     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -59,7 +59,7 @@ class SecurityContextUtilTest {
   // --- hasRole tests ---
 
   @Test
-  void hasRole_shouldReturnTrueWhenUserHasRole() {
+  void hasRoleReturnsTrueWhenUserHasRole() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("ADMIN"), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
@@ -69,7 +69,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void hasRole_shouldReturnFalseWhenUserLacksRole() {
+  void hasRoleReturnsFalseWhenUserLacksRole() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("ROLE_USER")));
@@ -79,7 +79,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void hasRole_shouldReturnFalseWhenNoAuthentication() {
+  void hasRoleReturnsFalseWhenNoAuthentication() {
     SecurityContextHolder.clearContext();
 
     assertThat(SecurityContextUtil.hasRole("ADMIN")).isFalse();
@@ -88,7 +88,7 @@ class SecurityContextUtilTest {
   // --- hasAuthority tests ---
 
   @Test
-  void hasAuthority_shouldReturnTrueWhenUserHasAuthority() {
+  void hasAuthorityReturnsTrueWhenUserHasAuthority() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
@@ -102,7 +102,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void hasAuthority_shouldReturnFalseWhenUserLacksAuthority() {
+  void hasAuthorityReturnsFalseWhenUserLacksAuthority() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("transactions:read")));
@@ -112,14 +112,14 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void hasAuthority_shouldReturnFalseWhenNoAuthentication() {
+  void hasAuthorityReturnsFalseWhenNoAuthentication() {
     SecurityContextHolder.clearContext();
 
     assertThat(SecurityContextUtil.hasAuthority("transactions:read:any")).isFalse();
   }
 
   @Test
-  void hasAuthority_shouldReturnFalseWhenAuthorityIsNull() {
+  void hasAuthorityReturnsFalseWhenAuthorityIsNull() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
@@ -131,7 +131,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void hasAuthority_shouldNotAddRolePrefix() {
+  void hasAuthorityDoesNotAddRolePrefix() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("ADMIN"), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
@@ -144,7 +144,7 @@ class SecurityContextUtilTest {
   // --- logAuthenticationContext tests ---
 
   @Test
-  void logAuthenticationContext_shouldNotThrowWhenAuthenticated() {
+  void logAuthenticationContextDoesNotThrowWhenAuthenticated() {
     var authentication =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123",
@@ -158,7 +158,7 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void logAuthenticationContext_shouldNotThrowWhenNoAuthentication() {
+  void logAuthenticationContextDoesNotThrowWhenNoAuthentication() {
     SecurityContextHolder.clearContext();
 
     SecurityContextUtil.logAuthenticationContext();

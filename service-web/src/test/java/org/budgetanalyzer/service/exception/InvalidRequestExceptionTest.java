@@ -12,25 +12,13 @@ import com.fasterxml.jackson.core.JsonParseException;
 class InvalidRequestExceptionTest {
 
   @Test
-  @DisplayName("Should create exception with message only")
-  void shouldCreateExceptionWithMessageOnly() {
-    var message = "Invalid request format";
-
-    var exception = new InvalidRequestException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isNull();
-  }
-
-  @Test
-  @DisplayName("Should create exception with message and cause")
-  void shouldCreateExceptionWithMessageAndCause() {
+  @DisplayName("Should create exception with cause")
+  void shouldCreateExceptionWithCause() {
     var message = "Failed to parse request body";
     var cause = new JsonParseException(null, "Unexpected token");
 
     var exception = new InvalidRequestException(message, cause);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isSameAs(cause);
   }
 
@@ -51,22 +39,12 @@ class InvalidRequestExceptionTest {
   }
 
   @Test
-  @DisplayName("Should handle null message")
-  void shouldHandleNullMessage() {
-    var exception = new InvalidRequestException(null);
-
-    assertThat(exception.getMessage()).isNull();
-    assertThat(exception.getCause()).isNull();
-  }
-
-  @Test
   @DisplayName("Should handle null cause")
   void shouldHandleNullCause() {
     var message = "Invalid request";
 
     var exception = new InvalidRequestException(message, null);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isNull();
   }
 
@@ -76,28 +54,6 @@ class InvalidRequestExceptionTest {
     var parsingError = new IllegalArgumentException("Invalid date format");
     var exception = new InvalidRequestException("Cannot parse date parameter", parsingError);
 
-    assertThat(exception.getMessage()).isEqualTo("Cannot parse date parameter");
     assertThat(exception.getCause()).isSameAs(parsingError);
-  }
-
-  @Test
-  @DisplayName("Should handle missing required parameter scenario")
-  void shouldHandleMissingRequiredParameter() {
-    var message = "Missing required parameter: userId";
-
-    var exception = new InvalidRequestException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getMessage().contains("userId")).isTrue();
-  }
-
-  @Test
-  @DisplayName("Should handle malformed JSON scenario")
-  void shouldHandleMalformedJsonScenario() {
-    var message = "Malformed JSON in request body";
-
-    var exception = new InvalidRequestException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
   }
 }

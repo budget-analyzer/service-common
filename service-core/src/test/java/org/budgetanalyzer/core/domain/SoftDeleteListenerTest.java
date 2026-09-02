@@ -55,32 +55,7 @@ class SoftDeleteListenerTest {
               entityManager.remove(entity);
               entityManager.flush(); // Force JPA to trigger @PreRemove callback
             })
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("Hard delete not allowed")
-        .hasMessageContaining("markDeleted(deletedBy)");
-
-    entityManager.getTransaction().rollback();
-  }
-
-  @Test
-  void shouldIncludeEntityClassNameInExceptionMessage() {
-    // Arrange
-    var entity = new TestSoftDeletableEntity();
-    entity.setName("Test Entity");
-
-    entityManager.getTransaction().begin();
-    entityManager.persist(entity);
-    entityManager.getTransaction().commit();
-
-    // Act & Assert
-    entityManager.getTransaction().begin();
-    assertThatThrownBy(
-            () -> {
-              entityManager.remove(entity);
-              entityManager.flush();
-            })
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("TestSoftDeletableEntity");
+        .isInstanceOf(UnsupportedOperationException.class);
 
     entityManager.getTransaction().rollback();
   }

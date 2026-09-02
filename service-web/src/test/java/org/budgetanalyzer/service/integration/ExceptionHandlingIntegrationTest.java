@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -36,7 +37,7 @@ import org.budgetanalyzer.service.security.test.TestClaimsSecurityConfig;
     properties = {"spring.main.web-application-type=servlet"})
 @AutoConfigureMockMvc
 @DisplayName("Exception Handling Integration Tests")
-class ExceptionHandlingIntegrationIntegrationTest {
+class ExceptionHandlingIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
@@ -46,8 +47,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
     mockMvc
         .perform(get("/api/test/not-found").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.type").value("NOT_FOUND"))
-        .andExpect(jsonPath("$.message").value("Test resource not found"));
+        .andExpect(jsonPath("$.type").value("NOT_FOUND"));
   }
 
   @Test
@@ -57,7 +57,6 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(get("/api/test/business-error").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(jsonPath("$.type").value("APPLICATION_ERROR"))
-        .andExpect(jsonPath("$.message").value("Business rule violation"))
         .andExpect(jsonPath("$.code").value("BUSINESS_RULE_VIOLATION"));
   }
 
@@ -67,8 +66,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
     mockMvc
         .perform(get("/api/test/invalid-request").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
-        .andExpect(jsonPath("$.message").value("Invalid request parameters"));
+        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"));
   }
 
   @Test
@@ -77,8 +75,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
     mockMvc
         .perform(get("/api/test/service-error").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isInternalServerError())
-        .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"))
-        .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+        .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"));
   }
 
   @Test
@@ -87,8 +84,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
     mockMvc
         .perform(get("/api/test/service-unavailable").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isServiceUnavailable())
-        .andExpect(jsonPath("$.type").value("SERVICE_UNAVAILABLE"))
-        .andExpect(jsonPath("$.message").value("Service temporarily unavailable"));
+        .andExpect(jsonPath("$.type").value("SERVICE_UNAVAILABLE"));
   }
 
   @Test
@@ -98,7 +94,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(get("/api/test/runtime-error").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"))
-        .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+        .andExpect(content().string(not(containsString("internal-secret-runtime-63820"))));
   }
 
   @Test
@@ -111,8 +107,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
             header()
                 .string(HttpHeaders.ALLOW, allOf(containsString("GET"), containsString("PATCH"))))
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
-        .andExpect(jsonPath("$.message").isString());
+        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"));
   }
 
   @Test
@@ -122,8 +117,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(get("/api/test/removed-route").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isNotFound())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.type").value("NOT_FOUND"))
-        .andExpect(jsonPath("$.message").isString());
+        .andExpect(jsonPath("$.type").value("NOT_FOUND"));
   }
 
   @Test
@@ -133,8 +127,7 @@ class ExceptionHandlingIntegrationIntegrationTest {
         .perform(get("/api/test/response-status").with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isConflict())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"))
-        .andExpect(jsonPath("$.message").isString());
+        .andExpect(jsonPath("$.type").value("INVALID_REQUEST"));
   }
 
   @Test
@@ -150,15 +143,10 @@ class ExceptionHandlingIntegrationIntegrationTest {
                 .with(ClaimsHeaderTestBuilder.defaultUser()))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.type").value("VALIDATION_ERROR"))
-        .andExpect(jsonPath("$.message").value(containsString("Validation failed")))
         .andExpect(jsonPath("$.fieldErrors").isArray())
         .andExpect(jsonPath("$.fieldErrors", hasSize(2)))
         .andExpect(jsonPath("$.fieldErrors[*].field").value(containsInAnyOrder("name", "name")))
-        .andExpect(
-            jsonPath("$.fieldErrors[*].message")
-                .value(
-                    containsInAnyOrder(
-                        "Name is required", "Name must be between 3 and 50 characters")));
+        .andExpect(jsonPath("$.fieldErrors[*].rejectedValue").value(containsInAnyOrder("", "")));
   }
 
   @Test

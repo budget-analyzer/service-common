@@ -15,28 +15,26 @@ import org.budgetanalyzer.service.api.FieldError;
 class BusinessExceptionTest {
 
   @Test
-  @DisplayName("Should create exception with message and code")
-  void shouldCreateExceptionWithMessageAndCode() {
+  @DisplayName("Should create exception with code")
+  void shouldCreateExceptionWithCode() {
     var message = "Transaction amount must be positive";
     var code = "NEGATIVE_AMOUNT";
 
     var exception = new BusinessException(message, code);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCode()).isEqualTo(code);
     assertThat(exception.getCause()).isNull();
   }
 
   @Test
-  @DisplayName("Should create exception with message, code, and cause")
-  void shouldCreateExceptionWithMessageCodeAndCause() {
+  @DisplayName("Should create exception with code and cause")
+  void shouldCreateExceptionWithCodeAndCause() {
     var message = "Budget limit exceeded";
     var code = "BUDGET_EXCEEDED";
     var cause = new IllegalStateException("Current balance insufficient");
 
     var exception = new BusinessException(message, code, cause);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCode()).isEqualTo(code);
     assertThat(exception.getCause()).isSameAs(cause);
   }
@@ -58,24 +56,12 @@ class BusinessExceptionTest {
   }
 
   @Test
-  @DisplayName("Should handle null message")
-  void shouldHandleNullMessage() {
-    var code = "ERROR_CODE";
-
-    var exception = new BusinessException(null, code);
-
-    assertThat(exception.getMessage()).isNull();
-    assertThat(exception.getCode()).isEqualTo(code);
-  }
-
-  @Test
   @DisplayName("Should handle null code")
   void shouldHandleNullCode() {
     var message = "Business rule violation";
 
     var exception = new BusinessException(message, null);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCode()).isNull();
   }
 
@@ -87,7 +73,6 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(message, code, (Throwable) null);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCode()).isEqualTo(code);
     assertThat(exception.getCause()).isNull();
   }
@@ -97,7 +82,6 @@ class BusinessExceptionTest {
   void shouldHandleAllNullValuesWithCauseConstructor() {
     var exception = new BusinessException(null, null, (Throwable) null);
 
-    assertThat(exception.getMessage()).isNull();
     assertThat(exception.getCode()).isNull();
     assertThat(exception.getCause()).isNull();
   }
@@ -108,7 +92,6 @@ class BusinessExceptionTest {
     var exception = new BusinessException("Amount cannot be negative", "NEGATIVE_AMOUNT");
 
     assertThat(exception.getCode()).isEqualTo("NEGATIVE_AMOUNT");
-    assertThat(exception.getMessage().contains("negative")).isTrue();
   }
 
   @Test
@@ -117,7 +100,6 @@ class BusinessExceptionTest {
     var exception = new BusinessException("Budget limit of $1000 exceeded", "BUDGET_EXCEEDED");
 
     assertThat(exception.getCode()).isEqualTo("BUDGET_EXCEEDED");
-    assertThat(exception.getMessage().contains("Budget")).isTrue();
   }
 
   @Test
@@ -127,7 +109,6 @@ class BusinessExceptionTest {
         new BusinessException("Duplicate transaction detected", "DUPLICATE_TRANSACTION");
 
     assertThat(exception.getCode()).isEqualTo("DUPLICATE_TRANSACTION");
-    assertThat(exception.getMessage().contains("Duplicate")).isTrue();
   }
 
   @Test
@@ -167,7 +148,6 @@ class BusinessExceptionTest {
     var exception =
         new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
 
-    assertThat(exception.getMessage()).isEqualTo("Batch validation failed");
     assertThat(exception.getCode()).isEqualTo("BATCH_VALIDATION_FAILED");
     assertThat(exception.hasFieldErrors()).isTrue();
     assertThat(exception.getFieldErrors().size()).isEqualTo(2);

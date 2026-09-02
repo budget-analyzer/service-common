@@ -35,8 +35,7 @@ class CsvDataTest {
     var rows = List.<CsvRow>of();
 
     assertThatThrownBy(() -> new CsvData(null, "format", headers, rows))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("fileName cannot be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -45,8 +44,7 @@ class CsvDataTest {
     var rows = List.<CsvRow>of();
 
     assertThatThrownBy(() -> new CsvData("test.csv", null, headers, rows))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("format cannot be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test

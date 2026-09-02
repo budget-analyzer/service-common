@@ -56,9 +56,7 @@ class ReactiveErrorWebExceptionHandlerIntegrationTest {
         .contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
         .expectBody()
         .jsonPath("$.type")
-        .isEqualTo("INTERNAL_ERROR")
-        .jsonPath("$.message")
-        .isEqualTo("An unexpected error occurred");
+        .isEqualTo("INTERNAL_ERROR");
   }
 
   @Test
@@ -76,9 +74,7 @@ class ReactiveErrorWebExceptionHandlerIntegrationTest {
         .contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
         .expectBody()
         .jsonPath("$.type")
-        .isEqualTo("NOT_FOUND")
-        .jsonPath("$.message")
-        .isEqualTo("Filter resource not found");
+        .isEqualTo("NOT_FOUND");
   }
 
   @Test

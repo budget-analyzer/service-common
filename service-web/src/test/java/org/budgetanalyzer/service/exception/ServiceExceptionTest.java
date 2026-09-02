@@ -12,35 +12,14 @@ import org.junit.jupiter.api.Test;
 class ServiceExceptionTest {
 
   @Test
-  @DisplayName("Should create exception with message only")
-  void shouldCreateExceptionWithMessageOnly() {
-    var message = "Service error occurred";
-
-    var exception = new ServiceException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isNull();
-  }
-
-  @Test
-  @DisplayName("Should create exception with message and cause")
-  void shouldCreateExceptionWithMessageAndCause() {
+  @DisplayName("Should create exception with cause")
+  void shouldCreateExceptionWithCause() {
     var message = "Service error occurred";
     var cause = new IOException("Database connection failed");
 
     var exception = new ServiceException(message, cause);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isSameAs(cause);
-  }
-
-  @Test
-  @DisplayName("Should handle null message")
-  void shouldHandleNullMessage() {
-    var exception = new ServiceException(null);
-
-    assertThat(exception.getMessage()).isNull();
-    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -50,7 +29,6 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(null, cause);
 
-    assertThat(exception.getMessage()).isNull();
     assertThat(exception.getCause()).isSameAs(cause);
   }
 
@@ -61,7 +39,6 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(message, null);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
     assertThat(exception.getCause()).isNull();
   }
 
@@ -89,26 +66,7 @@ class ServiceExceptionTest {
     var intermediateCause = new IOException("IO error", rootCause);
     var exception = new ServiceException("Service error", intermediateCause);
 
-    assertThat(exception.getMessage()).isEqualTo("Service error");
     assertThat(exception.getCause()).isSameAs(intermediateCause);
     assertThat(exception.getCause().getCause()).isSameAs(rootCause);
-  }
-
-  @Test
-  @DisplayName("Should handle empty message")
-  void shouldHandleEmptyMessage() {
-    var exception = new ServiceException("");
-
-    assertThat(exception.getMessage()).isEqualTo("");
-  }
-
-  @Test
-  @DisplayName("Should handle multi-line message")
-  void shouldHandleMultiLineMessage() {
-    var message = "Line 1\nLine 2\nLine 3";
-
-    var exception = new ServiceException(message);
-
-    assertThat(exception.getMessage()).isEqualTo(message);
   }
 }

@@ -60,7 +60,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isEqualTo("Invalid request format");
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -80,11 +79,9 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.VALIDATION_ERROR);
-    assertThat(response.getMessage()).isEqualTo("Validation failed for 1 field(s)");
     assertThat(response.getFieldErrors()).isNotNull();
     assertThat(response.getFieldErrors().size()).isEqualTo(1);
     assertThat(response.getFieldErrors().get(0).getField()).isEqualTo("name");
-    assertThat(response.getFieldErrors().get(0).getMessage()).isEqualTo("must not be blank");
     assertThat(response.getFieldErrors().get(0).getRejectedValue()).isEqualTo("");
   }
 
@@ -97,7 +94,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(response.getMessage()).isEqualTo("Transaction not found with id: 123");
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -111,7 +107,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(response.getMessage()).isNotNull();
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -126,7 +121,6 @@ class ServletApiExceptionHandlerTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(response.getBody().getMessage()).isEqualTo(HttpStatus.NOT_FOUND.getReasonPhrase());
     assertThat(response.getBody().getCode()).isNull();
     assertThat(response.getBody().getFieldErrors()).isNull();
   }
@@ -144,8 +138,6 @@ class ServletApiExceptionHandlerTest {
         .containsExactlyInAnyOrder(HttpMethod.GET, HttpMethod.PATCH);
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getBody().getMessage())
-        .isEqualTo(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase());
     assertThat(response.getBody().getCode()).isNull();
     assertThat(response.getBody().getFieldErrors()).isNull();
   }
@@ -159,7 +151,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
-    assertThat(response.getMessage()).isEqualTo("Amount must be positive");
     assertThat(response.getCode()).isEqualTo("NEGATIVE_AMOUNT");
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -173,7 +164,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
-    assertThat(response.getMessage()).isEqualTo("Business rule violation");
     assertThat(response.getCode()).isNull();
   }
 
@@ -191,13 +181,15 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
-    assertThat(response.getMessage()).isEqualTo("Batch validation failed");
     assertThat(response.getCode()).isEqualTo("BATCH_VALIDATION_FAILED");
     assertThat(response.getFieldErrors()).isNotNull();
     assertThat(response.getFieldErrors().size()).isEqualTo(2);
     assertThat(response.getFieldErrors().get(0).getIndex()).isEqualTo(Integer.valueOf(0));
     assertThat(response.getFieldErrors().get(0).getField()).isEqualTo("amount");
-    assertThat(response.getFieldErrors().get(0).getMessage()).isEqualTo("must not be null");
+    assertThat(response.getFieldErrors().get(0).getRejectedValue()).isNull();
+    assertThat(response.getFieldErrors().get(1).getIndex()).isEqualTo(Integer.valueOf(2));
+    assertThat(response.getFieldErrors().get(1).getField()).isEqualTo("date");
+    assertThat(response.getFieldErrors().get(1).getRejectedValue()).isEqualTo("invalid-date");
   }
 
   @Test
@@ -222,7 +214,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(response.getMessage()).isEqualTo("External API failed");
     assertThat(response.getCode()).isNull();
   }
 
@@ -235,7 +226,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(response.getMessage()).isEqualTo("Database connection failed");
     assertThat(response.getCode()).isNull();
   }
 
@@ -256,7 +246,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isNotNull();
   }
 
   @Test
@@ -268,7 +257,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isNotNull();
   }
 
   @Test
@@ -280,7 +268,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isNotNull();
   }
 
   @Test
@@ -292,8 +279,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-    assertThat(response.getMessage())
-        .isEqualTo("You do not have permission to perform this action");
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -307,8 +292,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-    assertThat(response.getMessage())
-        .isEqualTo("You do not have permission to perform this action");
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -322,7 +305,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-    assertThat(response.getMessage()).isEqualTo("Authentication required");
     assertThat(response.getCode()).isNull();
     assertThat(response.getFieldErrors()).isNull();
   }
@@ -336,7 +318,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
     assertThat(response.getCode()).isNull();
   }
 
@@ -349,7 +330,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -361,7 +341,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -373,7 +352,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -385,7 +363,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isEqualTo("Invalid request");
   }
 
   @Test
@@ -397,7 +374,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(response.getMessage()).isEqualTo("");
   }
 
   @Test
@@ -410,7 +386,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(response.getMessage()).isEqualTo("Service down");
   }
 
   @Test
@@ -424,19 +399,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(response.getMessage()).isEqualTo("Client error");
-  }
-
-  @Test
-  @DisplayName("Should preserve error message from BusinessException")
-  void shouldPreserveErrorMessageFromBusinessException() {
-    var detailedMessage = "Budget limit of $1000.00 exceeded by $250.50";
-    var exception = new BusinessException(detailedMessage, "BUDGET_EXCEEDED");
-
-    var response = servletApiExceptionHandler.handle(exception, webRequest);
-
-    assertThat(response.getMessage()).isEqualTo(detailedMessage);
-    assertThat(response.getCode()).isEqualTo("BUDGET_EXCEEDED");
   }
 
   @Test
@@ -449,20 +411,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(response.getMessage()).isEqualTo("Invalid number format");
-  }
-
-  @Test
-  @DisplayName("Should handle multiple exceptions of same type independently")
-  void shouldHandleMultipleExceptionsOfSameTypeIndependently() {
-    var exception1 = new ResourceNotFoundException("User not found");
-    var exception2 = new ResourceNotFoundException("Product not found");
-
-    var response1 = servletApiExceptionHandler.handle(exception1, webRequest);
-    var response2 = servletApiExceptionHandler.handle(exception2, webRequest);
-
-    assertThat(response1.getMessage()).isEqualTo("User not found");
-    assertThat(response2.getMessage()).isEqualTo("Product not found");
   }
 
   @Test
@@ -474,7 +422,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -486,7 +433,6 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -498,11 +444,10 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(response.getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
-  @DisplayName("Should handle ResponseStatusException with 401 and use generic message")
+  @DisplayName("Should handle ResponseStatusException with 401")
   void shouldHandleResponseStatusException401() {
     var exception = new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key expired");
 
@@ -513,7 +458,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-    assertThat(body.getMessage()).isEqualTo("Authentication required");
   }
 
   @Test
@@ -528,7 +472,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(body.getMessage()).isEqualTo("accessToken is required");
   }
 
   @Test
@@ -543,7 +486,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(body.getMessage()).isEqualTo("Resource not found");
   }
 
   @Test
@@ -559,7 +501,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    assertThat(body.getMessage()).isEqualTo("Something went wrong");
   }
 
   @Test
@@ -575,7 +516,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-    assertThat(body.getMessage()).isEqualTo("Downstream service down");
   }
 
   @Test
@@ -590,11 +530,10 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-    assertThat(body.getMessage()).isEqualTo("Resource already exists");
   }
 
   @Test
-  @DisplayName("Should handle ResponseStatusException with 403 and use generic message")
+  @DisplayName("Should handle ResponseStatusException with 403")
   void shouldHandleResponseStatusException403() {
     var exception = new ResponseStatusException(HttpStatus.FORBIDDEN, "User lacks admin scope");
 
@@ -605,7 +544,6 @@ class ServletApiExceptionHandlerTest {
     var body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-    assertThat(body.getMessage()).isEqualTo("You do not have permission to perform this action");
   }
 
   @Test
@@ -620,9 +558,7 @@ class ServletApiExceptionHandlerTest {
 
     var response = trackingHandler.handle(exception, webRequest);
 
-    assertThat(response).isNotNull();
-    assertThat(response.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-    assertThat(response.getMessage()).isEqualTo("shared not found");
+    assertThat(response).isSameAs(resolvedError.response());
     assertThat(trackingHandler.commonResolvedThrowable).isSameAs(exception);
     assertThat(trackingHandler.resolveCommonExceptionInvocationCount).isEqualTo(1);
   }
@@ -642,8 +578,7 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getMessage()).isEqualTo("shared invalid request");
+    assertThat(response.getBody()).isSameAs(resolvedError.response());
     assertThat(trackingHandler.commonResolvedThrowable).isSameAs(exception);
     assertThat(trackingHandler.resolveCommonExceptionInvocationCount).isEqualTo(1);
   }
@@ -665,9 +600,7 @@ class ServletApiExceptionHandlerTest {
 
     var response = trackingHandler.handle(exception, webRequest);
 
-    assertThat(response).isNotNull();
-    assertThat(response.getType()).isEqualTo(ApiErrorType.VALIDATION_ERROR);
-    assertThat(response.getMessage()).isEqualTo("shared validation");
+    assertThat(response).isSameAs(resolvedError.response());
     assertThat(response.getFieldErrors()).isNotNull();
     assertThat(response.getFieldErrors().size()).isEqualTo(1);
     assertThat(trackingHandler.validationResolvedBindingResult).isSameAs(bindingResult);

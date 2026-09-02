@@ -70,8 +70,13 @@ only and do not have Java source formatting tasks.
 - Version 12.0.1
 - Centralized rules in [`checkstyle-config`](https://github.com/budgetanalyzer/checkstyle-config) repo (`/workspace/checkstyle-config/` locally), shared across all services
 - Enforces Hibernate import ban
-- Enforces naming conventions
+- Enforces strict lowerCamelCase method names without underscores or a redundant `test` prefix
 - Validates Javadoc completeness
+
+The centralized `MethodName` rule applies to production, test, lifecycle, and helper methods. Both
+clear direct lowerCamelCase names and behavioral `should...` names are valid. This is a deliberate
+Budget Analyzer convention, not a Java or JUnit restriction, and repositories must not add local
+naming expressions or test-specific suppressions.
 
 **Common Issues**:
 - Javadoc missing periods at end of first sentence
@@ -79,7 +84,8 @@ only and do not have Java source formatting tasks.
 - Wildcard imports (`import java.util.*`)
 - Hibernate-specific imports (`import org.hibernate.*`)
 - Line length violations (100 characters)
-- Naming convention violations
+- Method names containing underscores, using non-lowerCamelCase forms, or beginning with a
+  redundant `test` prefix
 
 ## Javadoc Validation
 

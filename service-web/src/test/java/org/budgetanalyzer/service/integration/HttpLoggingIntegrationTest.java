@@ -28,7 +28,7 @@ import org.budgetanalyzer.service.security.test.TestClaimsSecurityConfig;
     properties = {"spring.main.web-application-type=servlet"})
 @AutoConfigureMockMvc
 @DisplayName("HTTP Logging Integration Tests")
-class HttpLoggingIntegrationIntegrationTest {
+class HttpLoggingIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 

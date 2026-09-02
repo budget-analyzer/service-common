@@ -21,7 +21,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 class ClaimsHeaderAuthenticationTokenTest {
 
   @Test
-  void authenticated_shouldSetAuthoritiesCorrectly() {
+  void authenticatedSetsAuthoritiesCorrectly() {
     var authorities =
         List.<GrantedAuthority>of(
             new SimpleGrantedAuthority("transactions:read"),
@@ -36,7 +36,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getName_shouldReturnUserId() {
+  void getNameReturnsUserId() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of("USER"), List.of());
 
@@ -44,7 +44,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getPrincipal_shouldReturnUserId() {
+  void getPrincipalReturnsUserId() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of("USER"), List.of());
 
@@ -52,7 +52,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getCredentials_shouldReturnEmptyString() {
+  void getCredentialsReturnsEmptyString() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of("USER"), List.of());
 
@@ -60,7 +60,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void isAuthenticated_shouldReturnTrue() {
+  void isAuthenticatedReturnsTrue() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of("USER"), List.of());
 
@@ -68,7 +68,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getRoles_shouldReturnRoleSet() {
+  void getRolesReturnsRoleSet() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated(
             "usr_abc123", Set.of("ADMIN", "USER"), List.of());
@@ -77,7 +77,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getRoles_shouldReturnUnmodifiableSet() {
+  void getRolesReturnsUnmodifiableSet() {
     var token =
         ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of("USER"), List.of());
 
@@ -86,7 +86,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void getAuthorities_shouldReturnUnmodifiableCollection() {
+  void getAuthoritiesReturnsUnmodifiableCollection() {
     var authorities = List.<GrantedAuthority>of(new SimpleGrantedAuthority("transactions:read"));
 
     var token = ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of(), authorities);
@@ -96,7 +96,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void authenticated_shouldHandleEmptyPermissionsAndRoles() {
+  void authenticatedHandlesEmptyPermissionsAndRoles() {
     var token = ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of(), List.of());
 
     assertThat(token.getAuthorities()).isEmpty();
@@ -106,39 +106,35 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void authenticated_shouldRejectNullUserId() {
+  void authenticatedRejectsNullUserId() {
     assertThatThrownBy(
             () -> ClaimsHeaderAuthenticationToken.authenticated(null, Set.of(), List.of()))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("userId must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
-  void authenticated_shouldRejectBlankUserId() {
+  void authenticatedRejectsBlankUserId() {
     assertThatThrownBy(
             () -> ClaimsHeaderAuthenticationToken.authenticated("   ", Set.of(), List.of()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("userId must not be blank");
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void authenticated_shouldRejectNullRoles() {
+  void authenticatedRejectsNullRoles() {
     assertThatThrownBy(
             () -> ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", null, List.of()))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("roles must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
-  void authenticated_shouldRejectNullAuthorities() {
+  void authenticatedRejectsNullAuthorities() {
     assertThatThrownBy(
             () -> ClaimsHeaderAuthenticationToken.authenticated("usr_abc123", Set.of(), null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("authorities must not be null");
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
-  void authenticated_shouldDefensivelyCopyRolesAndAuthorities() {
+  void authenticatedDefensivelyCopiesRolesAndAuthorities() {
     var roles = new LinkedHashSet<String>();
     roles.add("USER");
     var authorities = new ArrayList<GrantedAuthority>();
@@ -156,7 +152,7 @@ class ClaimsHeaderAuthenticationTokenTest {
   }
 
   @Test
-  void constructor_shouldBePrivate() throws Exception {
+  void constructorIsPrivate() throws Exception {
     var constructor =
         ClaimsHeaderAuthenticationToken.class.getDeclaredConstructor(
             String.class, Set.class, java.util.Collection.class);

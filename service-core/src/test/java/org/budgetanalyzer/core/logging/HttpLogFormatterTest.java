@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class HttpLogFormatterTest {
 
   @Test
-  void testFormatLogMessage_withPrefixAndDetails() {
+  void shouldFormatPrefixAndDetails() {
     Map<String, Object> details = Map.of("method", "GET", "uri", "/api/test");
     var result = HttpLogFormatter.formatLogMessage("HTTP Request", details, null);
 
@@ -22,7 +22,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testFormatLogMessage_withBody() {
+  void shouldIncludeBodyWhenFormattingLogMessage() {
     Map<String, Object> details = Map.of("status", 200);
     var body = "{\"name\":\"test\"}";
     var result = HttpLogFormatter.formatLogMessage("HTTP Response", details, body);
@@ -35,7 +35,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testFormatLogMessage_withNullBody() {
+  void shouldOmitNullBodyWhenFormattingLogMessage() {
     Map<String, Object> details = Map.of("key", "value");
     var result = HttpLogFormatter.formatLogMessage("Test", details, null);
 
@@ -44,7 +44,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testFormatLogMessage_withEmptyBody() {
+  void shouldOmitEmptyBodyWhenFormattingLogMessage() {
     Map<String, Object> details = Map.of("key", "value");
     var result = HttpLogFormatter.formatLogMessage("Test", details, "");
 
@@ -53,7 +53,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testFormatLogMessage_withEmptyDetails() {
+  void shouldFormatEmptyDetails() {
     var details = Map.<String, Object>of();
     var result = HttpLogFormatter.formatLogMessage("Empty", details, null);
 
@@ -61,7 +61,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testFormatLogMessage_withComplexDetails() {
+  void shouldFormatComplexDetails() {
     Map<String, Object> details =
         Map.of("method", "POST", "uri", "/api/users", "status", 201, "duration", 45.5);
     var result = HttpLogFormatter.formatLogMessage("HTTP Request", details, null);
@@ -74,7 +74,7 @@ class HttpLogFormatterTest {
   }
 
   @Test
-  void testConstructor_throwsException() {
+  void shouldThrowExceptionWhenInvokingConstructor() {
     assertThatThrownBy(
             () -> {
               var constructor = HttpLogFormatter.class.getDeclaredConstructor();

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class SensitiveHeaderMaskerTest {
 
   @Test
-  void testDefaultSensitiveHeaders_containsExpectedHeaders() {
+  void shouldContainExpectedDefaultSensitiveHeaders() {
     assertThat(SensitiveHeaderMasker.DEFAULT_SENSITIVE_HEADERS)
         .contains(
             "Authorization",
@@ -23,19 +23,19 @@ class SensitiveHeaderMaskerTest {
   }
 
   @Test
-  void testIsSensitive_withSensitiveHeader() {
+  void shouldIdentifySensitiveHeader() {
     var sensitiveHeaders = List.of("Authorization", "X-API-Key");
     assertThat(SensitiveHeaderMasker.isSensitive("Authorization", sensitiveHeaders)).isTrue();
   }
 
   @Test
-  void testIsSensitive_withNonSensitiveHeader() {
+  void shouldNotIdentifyNonSensitiveHeader() {
     var sensitiveHeaders = List.of("Authorization", "X-API-Key");
     assertThat(SensitiveHeaderMasker.isSensitive("Content-Type", sensitiveHeaders)).isFalse();
   }
 
   @Test
-  void testIsSensitive_caseInsensitive() {
+  void shouldIdentifySensitiveHeadersCaseInsensitively() {
     var sensitiveHeaders = List.of("Authorization");
     assertThat(SensitiveHeaderMasker.isSensitive("authorization", sensitiveHeaders)).isTrue();
     assertThat(SensitiveHeaderMasker.isSensitive("AUTHORIZATION", sensitiveHeaders)).isTrue();
@@ -43,31 +43,31 @@ class SensitiveHeaderMaskerTest {
   }
 
   @Test
-  void testIsSensitive_withEmptyList() {
+  void shouldNotIdentifySensitiveHeaderWhenListIsEmpty() {
     var sensitiveHeaders = List.<String>of();
     assertThat(SensitiveHeaderMasker.isSensitive("Authorization", sensitiveHeaders)).isFalse();
   }
 
   @Test
-  void testMask_returnsExpectedValue() {
+  void shouldReturnMaskedValue() {
     var result = SensitiveHeaderMasker.mask("Bearer token123");
     assertThat(result).isEqualTo("***MASKED***");
   }
 
   @Test
-  void testMask_withNullValue() {
+  void shouldReturnMaskedValueWhenInputIsNull() {
     var result = SensitiveHeaderMasker.mask(null);
     assertThat(result).isEqualTo("***MASKED***");
   }
 
   @Test
-  void testMask_withEmptyValue() {
+  void shouldReturnMaskedValueWhenInputIsEmpty() {
     var result = SensitiveHeaderMasker.mask("");
     assertThat(result).isEqualTo("***MASKED***");
   }
 
   @Test
-  void testConstructor_throwsException() {
+  void shouldThrowExceptionWhenInvokingConstructor() {
     assertThatThrownBy(
             () -> {
               var constructor = SensitiveHeaderMasker.class.getDeclaredConstructor();

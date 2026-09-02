@@ -16,7 +16,7 @@ import org.springframework.security.core.GrantedAuthority;
 class ClaimsHeaderTestBuilderTest {
 
   @Test
-  void defaultUser_shouldHaveCorrectHeaders() {
+  void defaultUserHasCorrectHeaders() {
     var headers = ClaimsHeaderTestBuilder.defaultUser().buildHeaders();
 
     assertThat(headers).containsEntry("X-User-Id", "usr_test123");
@@ -29,14 +29,14 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void user_shouldSetCustomUserId() {
+  void userSetsCustomUserId() {
     var headers = ClaimsHeaderTestBuilder.user("usr_custom789").buildHeaders();
 
     assertThat(headers).containsEntry("X-User-Id", "usr_custom789");
   }
 
   @Test
-  void admin_shouldSetAdminUserAndFullPermissions() {
+  void adminSetsAdminUserAndFullPermissions() {
     var headers = ClaimsHeaderTestBuilder.admin().buildHeaders();
 
     assertThat(headers).containsEntry("X-User-Id", "usr_admin456");
@@ -69,7 +69,7 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void withRoles_shouldSetCorrectHeader() {
+  void withRolesSetsCorrectHeader() {
     var headers =
         ClaimsHeaderTestBuilder.user("usr_test123").withRoles("ADMIN", "USER").buildHeaders();
 
@@ -77,7 +77,7 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void withPermissions_shouldSetCorrectHeader() {
+  void withPermissionsSetsCorrectHeader() {
     var headers =
         ClaimsHeaderTestBuilder.user("usr_test123")
             .withPermissions("transactions:read", "transactions:write")
@@ -87,21 +87,21 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void withEmptyRoles_shouldOmitRolesHeader() {
+  void withEmptyRolesOmitsRolesHeader() {
     var headers = ClaimsHeaderTestBuilder.user("usr_test123").withRoles().buildHeaders();
 
     assertThat(headers).doesNotContainKey("X-Roles");
   }
 
   @Test
-  void withEmptyPermissions_shouldOmitPermissionsHeader() {
+  void withEmptyPermissionsOmitsPermissionsHeader() {
     var headers = ClaimsHeaderTestBuilder.user("usr_test123").withPermissions().buildHeaders();
 
     assertThat(headers).doesNotContainKey("X-Permissions");
   }
 
   @Test
-  void buildHeaders_shouldReturnCorrectMap() {
+  void buildHeadersReturnsCorrectMap() {
     var headers =
         ClaimsHeaderTestBuilder.user("usr_abc123")
             .withPermissions("currencies:read")
@@ -115,7 +115,7 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void postProcessRequest_shouldAddHeadersToRequest() {
+  void postProcessRequestAddsHeadersToRequest() {
     var builder =
         ClaimsHeaderTestBuilder.user("usr_abc123")
             .withPermissions("transactions:read", "currencies:read")
@@ -130,7 +130,7 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void authoritiesFor_shouldCombinePermissionsAndRoles() {
+  void authoritiesForCombinesPermissionsAndRoles() {
     var authorities =
         ClaimsHeaderTestBuilder.authoritiesFor("transactions:read,currencies:read", "ADMIN");
 
@@ -140,14 +140,14 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void authoritiesFor_shouldHandleNullPermissions() {
+  void authoritiesForHandlesNullPermissions() {
     var authorities = ClaimsHeaderTestBuilder.authoritiesFor(null, "USER");
 
     assertThat(authorities).extracting(GrantedAuthority::getAuthority).containsExactly("ROLE_USER");
   }
 
   @Test
-  void authoritiesFor_shouldHandleNullRoles() {
+  void authoritiesForHandlesNullRoles() {
     var authorities = ClaimsHeaderTestBuilder.authoritiesFor("transactions:read", null);
 
     assertThat(authorities)
@@ -156,14 +156,14 @@ class ClaimsHeaderTestBuilderTest {
   }
 
   @Test
-  void authoritiesFor_shouldHandleBothNull() {
+  void authoritiesForHandlesBothNull() {
     var authorities = ClaimsHeaderTestBuilder.authoritiesFor(null, null);
 
     assertThat(authorities).isEmpty();
   }
 
   @Test
-  void authoritiesFor_shouldTrimWhitespace() {
+  void authoritiesForTrimsWhitespace() {
     var authorities =
         ClaimsHeaderTestBuilder.authoritiesFor(
             " transactions:read , currencies:read ", " ADMIN , USER ");

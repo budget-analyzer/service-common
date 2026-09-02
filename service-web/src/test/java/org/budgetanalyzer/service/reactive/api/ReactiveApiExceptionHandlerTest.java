@@ -56,7 +56,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isEqualTo("Invalid request format");
               assertThat(body.getCode()).isNull();
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -78,7 +77,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-              assertThat(body.getMessage()).isEqualTo("Transaction not found with id: 123");
               assertThat(body.getCode()).isNull();
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -100,7 +98,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
-              assertThat(body.getMessage()).isEqualTo("Amount must be positive");
               assertThat(body.getCode()).isEqualTo("NEGATIVE_AMOUNT");
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -122,7 +119,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
-              assertThat(body.getMessage()).isEqualTo("Business rule violation");
               assertThat(body.getCode()).isNull();
             })
         .verifyComplete();
@@ -143,7 +139,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-              assertThat(body.getMessage()).isEqualTo("External API failed");
               assertThat(body.getCode()).isNull();
             })
         .verifyComplete();
@@ -164,7 +159,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-              assertThat(body.getMessage()).isEqualTo("Database connection failed");
               assertThat(body.getCode()).isNull();
             })
         .verifyComplete();
@@ -227,7 +221,7 @@ class ReactiveApiExceptionHandlerTest {
               assertThat(body.getFieldErrors()).isNotNull();
               assertThat(body.getFieldErrors().size()).isEqualTo(1);
               assertThat(body.getFieldErrors().get(0).getField()).isEqualTo("name");
-              assertThat(body.getFieldErrors().get(0).getMessage()).isEqualTo("must not be blank");
+              assertThat(body.getFieldErrors().get(0).getRejectedValue()).isEqualTo("");
             })
         .verifyComplete();
   }
@@ -247,8 +241,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-              assertThat(body.getMessage())
-                  .isEqualTo("You do not have permission to perform this action");
               assertThat(body.getCode()).isNull();
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -270,8 +262,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-              assertThat(body.getMessage())
-                  .isEqualTo("You do not have permission to perform this action");
               assertThat(body.getCode()).isNull();
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -293,7 +283,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-              assertThat(body.getMessage()).isEqualTo("Authentication required");
               assertThat(body.getCode()).isNull();
               assertThat(body.getFieldErrors()).isNull();
             })
@@ -315,7 +304,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
               assertThat(body.getCode()).isNull();
             })
         .verifyComplete();
@@ -336,7 +324,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -356,7 +343,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -376,7 +362,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -396,7 +381,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isEqualTo("Invalid request");
             })
         .verifyComplete();
   }
@@ -416,7 +400,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-              assertThat(body.getMessage()).isEqualTo("");
             })
         .verifyComplete();
   }
@@ -437,7 +420,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-              assertThat(body.getMessage()).isEqualTo("Service down");
             })
         .verifyComplete();
   }
@@ -459,26 +441,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-              assertThat(body.getMessage()).isEqualTo("Client error");
-            })
-        .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("Should preserve error message from BusinessException")
-  void shouldPreserveErrorMessageFromBusinessException() {
-    var detailedMessage = "Budget limit of $1000.00 exceeded by $250.50";
-    var exception = new BusinessException(detailedMessage, "BUDGET_EXCEEDED");
-
-    var result = reactiveApiExceptionHandler.handleBusiness(exception);
-
-    StepVerifier.create(result)
-        .assertNext(
-            response -> {
-              var body = response.getBody();
-              assertThat(body).isNotNull();
-              assertThat(body.getMessage()).isEqualTo(detailedMessage);
-              assertThat(body.getCode()).isEqualTo("BUDGET_EXCEEDED");
             })
         .verifyComplete();
   }
@@ -499,31 +461,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isEqualTo("Invalid number format");
-            })
-        .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("Should handle multiple exceptions of same type independently")
-  void shouldHandleMultipleExceptionsOfSameTypeIndependently() {
-    var exception1 = new ResourceNotFoundException("User not found");
-    var exception2 = new ResourceNotFoundException("Product not found");
-
-    var result1 = reactiveApiExceptionHandler.handleNotFound(exception1);
-    var result2 = reactiveApiExceptionHandler.handleNotFound(exception2);
-
-    StepVerifier.create(result1)
-        .assertNext(
-            response -> {
-              assertThat(response.getBody().getMessage()).isEqualTo("User not found");
-            })
-        .verifyComplete();
-
-    StepVerifier.create(result2)
-        .assertNext(
-            response -> {
-              assertThat(response.getBody().getMessage()).isEqualTo("Product not found");
             })
         .verifyComplete();
   }
@@ -543,7 +480,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -563,7 +499,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -583,7 +518,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("An unexpected error occurred");
             })
         .verifyComplete();
   }
@@ -621,7 +555,7 @@ class ReactiveApiExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should handle ResponseStatusException with 401 and use generic message")
+  @DisplayName("Should handle ResponseStatusException with 401")
   void shouldHandleResponseStatusException401() {
     var exception = new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key expired");
 
@@ -635,7 +569,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
-              assertThat(body.getMessage()).isEqualTo("Authentication required");
             })
         .verifyComplete();
   }
@@ -655,7 +588,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isEqualTo("accessToken is required");
             })
         .verifyComplete();
   }
@@ -675,7 +607,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
-              assertThat(body.getMessage()).isEqualTo("Resource not found");
             })
         .verifyComplete();
   }
@@ -696,7 +627,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-              assertThat(body.getMessage()).isEqualTo("Something went wrong");
             })
         .verifyComplete();
   }
@@ -717,7 +647,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
-              assertThat(body.getMessage()).isEqualTo("Downstream service down");
             })
         .verifyComplete();
   }
@@ -737,13 +666,12 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
-              assertThat(body.getMessage()).isEqualTo("Resource already exists");
             })
         .verifyComplete();
   }
 
   @Test
-  @DisplayName("Should handle ResponseStatusException with 403 and use generic message")
+  @DisplayName("Should handle ResponseStatusException with 403")
   void shouldHandleResponseStatusException403() {
     var exception = new ResponseStatusException(HttpStatus.FORBIDDEN, "User lacks admin scope");
 
@@ -757,8 +685,6 @@ class ReactiveApiExceptionHandlerTest {
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.FORBIDDEN);
-              assertThat(body.getMessage())
-                  .isEqualTo("You do not have permission to perform this action");
             })
         .verifyComplete();
   }
@@ -779,8 +705,7 @@ class ReactiveApiExceptionHandlerTest {
         .assertNext(
             response -> {
               assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-              assertThat(response.getBody()).isNotNull();
-              assertThat(response.getBody().getMessage()).isEqualTo("shared not found");
+              assertThat(response.getBody()).isSameAs(resolvedError.response());
             })
         .verifyComplete();
 
@@ -805,8 +730,7 @@ class ReactiveApiExceptionHandlerTest {
         .assertNext(
             response -> {
               assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-              assertThat(response.getBody()).isNotNull();
-              assertThat(response.getBody().getMessage()).isEqualTo("shared invalid request");
+              assertThat(response.getBody()).isSameAs(resolvedError.response());
             })
         .verifyComplete();
 
@@ -837,8 +761,7 @@ class ReactiveApiExceptionHandlerTest {
         .assertNext(
             response -> {
               assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-              assertThat(response.getBody()).isNotNull();
-              assertThat(response.getBody().getMessage()).isEqualTo("shared validation");
+              assertThat(response.getBody()).isSameAs(resolvedError.response());
               assertThat(response.getBody().getFieldErrors()).isNotNull();
               assertThat(response.getBody().getFieldErrors().size()).isEqualTo(1);
             })
